@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Link expired · BuddyDrop')}"></head>
+<body>
+<main class="center-shell">
+  <div class="auth-card">
+    <div class="notice notice-warn">
+      <p style="margin:0 0 6px;text-align:center;font-family:var(--font-display);font-weight:600;font-size:16px;color:var(--ink)">
+        This sign-in link isn't valid
+      </p>
+      <p style="margin:0;text-align:center;color:var(--ink-2)">
+        It may have expired or already been used. Request a fresh one below.
+      </p>
+    </div>
+    <a class="btn btn-primary btn-block" style="margin-top:var(--space-4)" th:href="@{/login}">Back to sign in</a>
+  </div>
+</main>
+</body>
+</html>

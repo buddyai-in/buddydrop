@@ -1,0 +1,23 @@
+# Production: PostgreSQL + real SMTP, all secrets supplied via environment.
+spring:
+  datasource:
+    url: ${BUDDYDROP_DB_URL:jdbc:postgresql://localhost:5432/buddydrop}
+    username: ${BUDDYDROP_DB_USER:buddydrop}
+    password: ${BUDDYDROP_DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${BUDDYDROP_DB_POOL_MAX:10}
+  mail:
+    host: ${BUDDYDROP_SMTP_HOST:}
+    port: ${BUDDYDROP_SMTP_PORT:587}
+    username: ${BUDDYDROP_SMTP_USER:}
+    password: ${BUDDYDROP_SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true

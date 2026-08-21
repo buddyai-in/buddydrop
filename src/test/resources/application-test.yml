@@ -1,0 +1,17 @@
+# Test profile: in-memory H2 + Flyway, no external services. A dummy AWS region/creds keep the
+# S3 client beans constructable; tests that touch storage use a fake StorageService, not real S3.
+spring:
+  datasource:
+    url: jdbc:h2:mem:buddydrop-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+buddydrop:
+  base-url: http://localhost:8080
+  storage:
+    bucket: test-bucket
+    region: us-east-1
+
+aws:
+  region: us-east-1
