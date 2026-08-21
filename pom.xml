@@ -96,6 +96,12 @@
             <artifactId>s3</artifactId>
         </dependency>
 
+        <!-- AWS SES (email) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sesv2</artifactId>
+        </dependency>
+
         <!-- Rate limiting -->
         <dependency>
             <groupId>com.bucket4j</groupId>

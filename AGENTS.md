@@ -45,6 +45,10 @@ StorageService (abstraction) ──► S3StorageService   ← all S3 access live
 
 - **All S3 access goes through `StorageService`.** Never call the SDK from a controller or another
   service. Tests swap in an in-memory fake via this seam.
+- **All email goes through `MailService` → `EmailSender`.** `MailService` owns the message content;
+  transport is one `EmailSender` bean chosen by `buddydrop.mail.provider` (`ses` / `smtp` / `log`,
+  each `@ConditionalOnProperty`). Add a new provider by adding an impl + condition — don't branch
+  inside `MailService`, and don't call the SES/SMTP SDK from elsewhere.
 - **File ↔ share decoupling.** `FileService` depends on the narrow `ShareCleanup` interface (so a
   delete tears down shares); `ShareService` *implements* it and checks ownership via the file
   repository directly. This keeps the dependency one-directional — do not make `ShareService`
@@ -80,6 +84,7 @@ StorageService (abstraction) ──► S3StorageService   ← all S3 access live
 | S3 presigning / delete / head | `storage/S3StorageService` |
 | Share create/revoke/resolve, cap/expiry/password | `share/ShareService` |
 | Public download page | `share/PublicShareController`, `templates/share/*` |
+| Sending email (SES / SMTP / dev-log) | `mail/MailService` + `mail/EmailSender` impls, `config/SesConfig` |
 | Dashboard page assembly | `web/ViewController`, `templates/dashboard.html` |
 | Security rules / session | `security/SecurityConfig` |
 | Config knobs | `config/AppProperties`, `resources/application*.yml` |

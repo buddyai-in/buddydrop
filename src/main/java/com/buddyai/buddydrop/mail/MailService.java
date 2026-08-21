@@ -1,30 +1,23 @@
 package com.buddyai.buddydrop.mail;
 
-import com.buddyai.buddydrop.config.AppProperties;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-
 /**
- * Sends transactional email. Today that is only the magic-link sign-in message.
+ * Composes transactional email and delegates delivery to the configured {@link EmailSender}
+ * (SES, SMTP, or a dev logger). Today the only message is the magic-link sign-in email.
  *
- * <p>{@link JavaMailSender} is optional: when no SMTP host is configured (typical for local dev),
- * the sign-in link is logged instead of sent, so the app is fully usable without a mail server.
- * This avoids a hard startup dependency on SMTP while keeping production behavior unchanged.
+ * <p>Keeping content here and transport behind {@link EmailSender} means switching providers is a
+ * configuration change ({@code buddydrop.mail.provider}), not a code change — and the email markup
+ * lives in exactly one place.
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class MailService {
 
-    private final ObjectProvider<JavaMailSender> mailSenderProvider;
-    private final AppProperties properties;
+    private final EmailSender emailSender;
 
     public void sendMagicLink(String toEmail, String link) {
         String subject = "Your BuddyDrop sign-in link";
@@ -41,23 +34,6 @@ public class MailService {
                 </div>
                 """.formatted(link);
 
-        JavaMailSender sender = mailSenderProvider.getIfAvailable();
-        if (sender == null) {
-            log.warn("No mail sender configured — magic-link for {} (dev mode): {}", toEmail, link);
-            return;
-        }
-        try {
-            MimeMessage message = sender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, StandardCharsets.UTF_8.name());
-            helper.setTo(toEmail);
-            helper.setFrom(properties.getMail().getFrom(), properties.getMail().getFromName());
-            helper.setSubject(subject);
-            helper.setText(html, true);
-            sender.send(message);
-            log.info("Sent magic-link email to {}", toEmail);
-        } catch (Exception e) {
-            log.error("Failed to send magic-link email to {}", toEmail, e);
-            throw new IllegalStateException("Could not send sign-in email", e);
-        }
+        emailSender.send(toEmail, subject, html);
     }
 }

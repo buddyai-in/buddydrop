@@ -94,10 +94,27 @@ environment variables. Key ones:
 | `BUDDYDROP_S3_ENDPOINT` | S3-compatible endpoint override (MinIO/LocalStack) | *(none)* |
 | `BUDDYDROP_QUOTA_BYTES` | Per-account storage quota | 10 GB |
 | `BUDDYDROP_MAX_UPLOAD_BYTES` | Max single upload | 5 GB |
+| `BUDDYDROP_MAIL_PROVIDER` | Email transport: `log`, `ses`, or `smtp` | `log` (dev) / `ses` (prod) |
+| `BUDDYDROP_MAIL_FROM` | From address on emails | `no-reply@buddydrop.app` |
+| `BUDDYDROP_SES_REGION` | SES region (falls back to `AWS_REGION`) | `us-east-1` |
+| `BUDDYDROP_SES_CONFIG_SET` | Optional SES configuration set | *(none)* |
 
 **Production** (`prod` profile) additionally reads `BUDDYDROP_DB_URL` / `BUDDYDROP_DB_USER` /
-`BUDDYDROP_DB_PASSWORD` and `BUDDYDROP_SMTP_*`. AWS credentials come from the standard provider
-chain (env vars, profile, or IAM role) — never hardcoded.
+`BUDDYDROP_DB_PASSWORD`. AWS credentials come from the standard provider chain (env vars, profile,
+or IAM role) — never hardcoded.
+
+### Email transport
+
+Email delivery is pluggable via `BUDDYDROP_MAIL_PROVIDER`, selecting one `EmailSender`:
+
+- **`log`** (default in dev) — writes the message to the console instead of sending; the magic-link
+  URL appears in the log so you can sign in with no mail infrastructure.
+- **`ses`** (default in prod) — Amazon SES via the AWS SDK. No SMTP credentials; uses the same AWS
+  credential chain as S3. The from address must be a **verified SES identity** (or verified domain),
+  and while your account is in the SES sandbox, recipients must be verified too. Grant the app's IAM
+  principal `ses:SendEmail`.
+- **`smtp`** — any SMTP relay via `spring.mail.*` (`BUDDYDROP_SMTP_HOST` / `_PORT` / `_USER` /
+  `_PASSWORD`), including the SES SMTP interface if you prefer it over the API.
 
 ### S3 bucket expectations
 
@@ -118,7 +135,7 @@ src/main/java/com/buddyai/buddydrop/
 ├─ storage/     StorageService abstraction + S3 implementation
 ├─ file/        file lifecycle service + JSON API
 ├─ share/       sharing service, owner API, public download controller
-├─ mail/        transactional email
+├─ mail/        transactional email (EmailSender: SES / SMTP / dev-logging)
 ├─ security/    Spring Security config + principal
 ├─ web/         dashboard view controller, error handling, display helpers
 └─ exception/   domain exceptions mapped to HTTP status

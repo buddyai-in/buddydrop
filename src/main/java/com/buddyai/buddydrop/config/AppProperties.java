@@ -60,9 +60,19 @@ public class AppProperties {
 
     @Data
     public static class Mail {
+        /**
+         * Transport for outgoing email: {@code ses} (Amazon SES API), {@code smtp} (JavaMailSender),
+         * or {@code log} (dev — writes the message to the log instead of sending). Selects exactly one
+         * {@code EmailSender} implementation.
+         */
+        private String provider = "log";
         /** From address on magic-link emails. */
         private String from = "no-reply@buddydrop.app";
         /** Display name on magic-link emails. */
         private String fromName = "BuddyDrop";
+        /** AWS region for the SES client (only used when provider = ses). */
+        private String region = "us-east-1";
+        /** Optional SES configuration set for dedicated IP pools / event publishing. */
+        private String configurationSet;
     }
 }
