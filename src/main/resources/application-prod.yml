@@ -1,4 +1,6 @@
-# Production: PostgreSQL + real SMTP, all secrets supplied via environment.
+# Production: PostgreSQL + Amazon SES for email, all secrets supplied via environment.
+# Email defaults to the SES API (no SMTP creds needed — uses the AWS credential chain). To use an
+# SMTP relay instead, set BUDDYDROP_MAIL_PROVIDER=smtp and the spring.mail.* values below.
 spring:
   datasource:
     url: ${BUDDYDROP_DB_URL:jdbc:postgresql://localhost:5432/buddydrop}
@@ -15,6 +17,10 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+
+buddydrop:
+  mail:
+    provider: ${BUDDYDROP_MAIL_PROVIDER:ses}
 
 server:
   servlet:

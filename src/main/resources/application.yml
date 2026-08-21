@@ -53,8 +53,11 @@ buddydrop:
     quota-bytes: ${BUDDYDROP_QUOTA_BYTES:10737418240}      # 10 GB
     max-upload-bytes: ${BUDDYDROP_MAX_UPLOAD_BYTES:5368709120} # 5 GB
   mail:
+    provider: ${BUDDYDROP_MAIL_PROVIDER:log}   # log | ses | smtp
     from: ${BUDDYDROP_MAIL_FROM:no-reply@buddydrop.app}
-    from-name: BuddyDrop
+    from-name: ${BUDDYDROP_MAIL_FROM_NAME:BuddyDrop}
+    region: ${BUDDYDROP_SES_REGION:${AWS_REGION:us-east-1}}
+    configuration-set: ${BUDDYDROP_SES_CONFIG_SET:}
 
 logging:
   level:
