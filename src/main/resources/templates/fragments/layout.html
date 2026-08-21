@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--
+  Shared <head>. Usage: <head th:replace="~{fragments/layout :: head('Page title')}"></head>
+  Exposes the CSRF token as meta tags so page JavaScript can echo it on fetch() calls.
+-->
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title}">BuddyDrop</title>
+  <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
+  <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<!-- Reusable brand mark: <a th:replace="~{fragments/layout :: brand}"></a> -->
+<a th:fragment="brand" th:href="@{/files}" class="brand">
+  <span class="logo" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M12 2C8 8 5 11 5 15a7 7 0 0014 0c0-4-3-7-7-13z"/></svg>
+  </span>
+  BuddyDrop
+</a>
+</body>
+</html>

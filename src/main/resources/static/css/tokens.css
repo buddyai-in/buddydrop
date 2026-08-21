@@ -1,0 +1,78 @@
+/*
+ * BuddyDrop design tokens — the single source of truth for color, type, spacing, and radius.
+ * Components style themselves through these custom properties only; light is the bare :root, dark
+ * is redefined under prefers-color-scheme so the app follows the viewer's system theme.
+ */
+:root {
+  --ink: #0e1b1d;
+  --ink-2: #33474b;
+  --ink-3: #5f767b;
+
+  --bg: #f5f8f8;
+  --surface: #ffffff;
+  --surface-2: #eef3f3;
+
+  --line: #dce5e5;
+  --line-2: #c6d4d4;
+
+  --accent: #0d7c86;
+  --accent-2: #0a5f68;
+  --accent-contrast: #ffffff;
+  --accent-wash: #e2f1f2;
+
+  --good: #1f8a5b;
+  --good-wash: #e2f3ea;
+  --warn: #b5730b;
+  --warn-wash: #faeed6;
+  --crit: #c0392b;
+  --crit-wash: #fbe6e3;
+
+  --shadow-sm: 0 1px 2px rgba(14, 27, 29, .06);
+  --shadow: 0 1px 2px rgba(14, 27, 29, .06), 0 8px 24px -12px rgba(14, 27, 29, .18);
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "Bricolage Grotesque", var(--font-sans);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e8f0f0;
+    --ink-2: #adc0c1;
+    --ink-3: #7d9394;
+
+    --bg: #0b1516;
+    --surface: #111f21;
+    --surface-2: #16292b;
+
+    --line: #22383a;
+    --line-2: #2f4a4d;
+
+    --accent: #2bb7c2;
+    --accent-2: #5fd0d8;
+    --accent-contrast: #06181a;
+    --accent-wash: #0f2d30;
+
+    --good: #3fbe83;
+    --good-wash: #0f2a1f;
+    --warn: #e0a03e;
+    --warn-wash: #2c2311;
+    --crit: #e8776a;
+    --crit-wash: #2e1613;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -14px rgba(0, 0, 0, .6);
+  }
+}

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Link unavailable · BuddyDrop')}"></head>
+<body>
+<main class="center-shell">
+  <div class="public-card">
+    <div class="notice notice-warn" style="border:0;background:transparent;padding:0">
+      <span class="notice-icon" aria-hidden="true" style="color:var(--warn)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="9"/><path d="M12 8v4m0 4h.01"/>
+        </svg>
+      </span>
+    </div>
+    <h1>Link unavailable</h1>
+    <p class="file-sub" th:text="${reason} ?: 'This link is no longer valid.'">This link has expired.</p>
+    <p class="muted public-footer">Delivered securely by <a th:href="@{/login}">BuddyDrop</a></p>
+  </div>
+</main>
+</body>
+</html>

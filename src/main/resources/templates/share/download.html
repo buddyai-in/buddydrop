@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Download · BuddyDrop')}"></head>
+<body>
+<main class="center-shell">
+  <div class="public-card">
+    <span class="file-icon" th:attr="data-kind=${#strings.toLowerCase(ext)}" th:text="${ext}">PDF</span>
+    <h1 th:text="${filename}">document.pdf</h1>
+    <p class="file-sub">
+      <span th:text="${sizeHuman}">2.4 MB</span>
+      · shared by <span th:text="${sharedBy}">a BuddyDrop user</span>
+      <span th:if="${expiryLabel}"> · <span th:text="${expiryLabel}">expires in 2 days</span></span>
+    </p>
+    <form th:action="@{'/s/' + ${token}}" method="post">
+      <button class="btn btn-primary btn-block" type="submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+        </svg>
+        Download
+      </button>
+    </form>
+    <p class="muted public-footer">Delivered securely by <a th:href="@{/login}">BuddyDrop</a></p>
+  </div>
+</main>
+</body>
+</html>

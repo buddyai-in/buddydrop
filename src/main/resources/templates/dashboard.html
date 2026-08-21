@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Your files · BuddyDrop')}"></head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <a th:replace="~{fragments/layout :: brand}"></a>
+    <div class="userchip">
+      <span class="email" th:text="${email}">you@company.com</span>
+      <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(email,0,2))}">YO</span>
+      <form class="logout-form" th:action="@{/auth/logout}" method="post">
+        <button class="btn-icon" type="submit" title="Sign out" aria-label="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="dash-head">
+    <div>
+      <h1>Your files</h1>
+      <div class="usage">
+        <div class="file-sub">
+          <span th:text="${usedHuman}">3.7 GB</span> of <span th:text="${quotaHuman}">10 GB</span> used
+        </div>
+        <div class="usage-meter"><span th:style="'width:' + ${percent} + '%'"></span></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="pick-btn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Upload
+    </button>
+  </div>
+
+  <!-- Drag-and-drop / click upload. The bytes go straight to S3 via a presigned PUT. -->
+  <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload files">
+    <div class="dz-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 15V3m0 0L8 7m4-4 4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+      </svg>
+    </div>
+    <div class="dropzone-title">Drop files here</div>
+    <span class="muted">or click to browse</span>
+    <input type="file" id="file-input" multiple hidden>
+  </div>
+
+  <ul class="uploads" id="uploads" aria-live="polite"></ul>
+
+  <!-- Existing files -->
+  <ul class="file-list" id="file-list">
+    <li class="file-row" th:each="f : ${files}"
+        th:id="'row-' + ${f.id}" th:data-file-id="${f.id}" th:data-file-name="${f.name}">
+      <span class="file-icon" th:attr="data-kind=${#strings.toLowerCase(f.ext)}" th:text="${f.ext}">PDF</span>
+      <div class="file-meta">
+        <div class="file-name" th:text="${f.name}">document.pdf</div>
+        <div class="file-sub"><span th:text="${f.sizeHuman}">2.4 MB</span> · <span th:text="${f.dateLabel}">Aug 18</span></div>
+      </div>
+      <span class="badge" th:classappend="${f.shared} ? 'badge-shared' : 'badge-private'"
+            th:text="${f.shared} ? ${f.shareLabel} : 'private'">private</span>
+      <div class="row-actions">
+        <button class="btn-icon js-download" type="button" title="Download" aria-label="Download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+          </svg>
+        </button>
+        <button class="btn-icon js-share" type="button" title="Share" aria-label="Share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>
+          </svg>
+        </button>
+        <button class="btn-icon js-delete" type="button" title="Delete" aria-label="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a1 1 0 01-1 1H7a1 1 0 01-1-1V6"/>
+          </svg>
+        </button>
+      </div>
+    </li>
+  </ul>
+
+  <div class="empty" id="empty-state" th:if="${files.isEmpty()}">
+    <h2>No files yet</h2>
+    <p class="muted">Upload your first file to get started — then share it with a secure link.</p>
+  </div>
+</main>
+
+<!-- Share dialog -->
+<div class="modal-backdrop" id="share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">
+  <div class="modal">
+    <h2 id="share-title">Share file</h2>
+    <p class="modal-sub">Anyone with the link can download this file.</p>
+
+    <div class="linkbox" id="share-linkbox">
+      <input type="text" id="share-url" readonly aria-label="Share link" placeholder="Generate a link below">
+      <button class="btn btn-ghost" id="copy-btn" type="button">Copy</button>
+    </div>
+
+    <div class="opts-grid">
+      <div class="field">
+        <label class="label" for="opt-expiry">Expires</label>
+        <select class="input" id="opt-expiry">
+          <option value="">Never</option>
+          <option value="1">In 1 day</option>
+          <option value="7" selected>In 7 days</option>
+          <option value="30">In 30 days</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="opt-cap">Download cap</label>
+        <input class="input" id="opt-cap" type="number" min="1" placeholder="Unlimited">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label class="label" for="opt-pass">Password (optional)</label>
+        <input class="input" id="opt-pass" type="password" autocomplete="new-password" placeholder="No password">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger hidden" id="revoke-btn" type="button">Revoke link</button>
+      <div style="display:flex;gap:var(--space-3);margin-left:auto">
+        <button class="btn btn-ghost" id="share-close" type="button">Close</button>
+        <button class="btn btn-primary" id="share-save" type="button">Create link</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Local development: in-memory H2 (no external database), Thymeleaf hot-reload, no SMTP.
+# The magic-link URL is logged to the console (see MailService) so you can sign in without a mail server.
+spring:
+  datasource:
+    url: jdbc:h2:mem:buddydrop;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  thymeleaf:
+    cache: false
+
+logging:
+  level:
+    com.buddyai.buddydrop: DEBUG

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Confirm sign-in · BuddyDrop')}"></head>
+<body>
+<main class="center-shell">
+  <div class="auth-card">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8 8 5 11 5 15a7 7 0 0014 0c0-4-3-7-7-13z"/></svg>
+    </span>
+    <h1>Confirm sign-in</h1>
+    <p class="subtitle">You're about to sign in as
+      <strong th:text="${email}">you@company.com</strong>.</p>
+    <!-- Consuming the token requires this explicit POST, so an email scanner's preview GET can't spend it. -->
+    <form th:action="@{/auth/verify}" method="post">
+      <input type="hidden" name="token" th:value="${token}">
+      <button class="btn btn-primary btn-block" type="submit">Sign in to BuddyDrop</button>
+    </form>
+  </div>
+</main>
+</body>
+</html>
