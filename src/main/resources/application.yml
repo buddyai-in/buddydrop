@@ -58,6 +58,16 @@ buddydrop:
     from-name: ${BUDDYDROP_MAIL_FROM_NAME:BuddyDrop}
     region: ${BUDDYDROP_SES_REGION:${AWS_REGION:us-east-1}}
     configuration-set: ${BUDDYDROP_SES_CONFIG_SET:}
+  # Per-user rate limits (rolling windows). Set any value to 0 to disable that window.
+  limits:
+    upload:
+      hourly: ${BUDDYDROP_UPLOAD_LIMIT_HOURLY:50}
+      daily: ${BUDDYDROP_UPLOAD_LIMIT_DAILY:500}
+      monthly: ${BUDDYDROP_UPLOAD_LIMIT_MONTHLY:5000}
+    download:
+      hourly: ${BUDDYDROP_DOWNLOAD_LIMIT_HOURLY:200}
+      daily: ${BUDDYDROP_DOWNLOAD_LIMIT_DAILY:2000}
+      monthly: ${BUDDYDROP_DOWNLOAD_LIMIT_MONTHLY:20000}
 
 logging:
   level:

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Link unavailable · BuddyDrop')}"></head>
+<head th:replace="~{fragments/layout :: head('Link unavailable · BuddyAi Drop-In')}"></head>
 <body>
 <main class="center-shell">
   <div class="public-card">
@@ -13,7 +13,7 @@
     </div>
     <h1>Link unavailable</h1>
     <p class="file-sub" th:text="${reason} ?: 'This link is no longer valid.'">This link has expired.</p>
-    <p class="muted public-footer">Delivered securely by <a th:href="@{/login}">BuddyDrop</a></p>
+    <p class="muted public-footer">Delivered securely by <a th:href="@{/login}">BuddyAi Drop-In</a></p>
   </div>
 </main>
 </body>

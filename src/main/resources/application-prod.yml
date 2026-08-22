@@ -26,4 +26,5 @@ server:
   servlet:
     session:
       cookie:
-        secure: true
+        # Secure cookies by default in prod; override to false only for local HTTP (e.g. docker-compose).
+        secure: ${BUDDYDROP_COOKIE_SECURE:true}

@@ -1,6 +1,8 @@
 package com.buddyai.buddydrop.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -28,6 +30,9 @@ public class AppProperties {
     @NestedConfigurationProperty
     private Mail mail = new Mail();
 
+    @NestedConfigurationProperty
+    private Limits limits = new Limits();
+
     @Data
     public static class Auth {
         /** How long a magic-link token remains valid after issue. */
@@ -52,6 +57,12 @@ public class AppProperties {
         private boolean pathStyleAccess = false;
         /** Validity window for issued presigned URLs. */
         private Duration presignTtl = Duration.ofMinutes(10);
+        /**
+         * When true, apply a CORS rule to the bucket on startup allowing browser uploads from
+         * {@code base-url}. Convenient for dev; in production prefer configuring bucket CORS
+         * out-of-band and leaving this false (so the app needs no {@code s3:PutBucketCORS}).
+         */
+        private boolean configureCors = false;
         /** Per-account storage quota in bytes (default 10 GB). */
         private long quotaBytes = 10L * 1024 * 1024 * 1024;
         /** Largest single upload accepted, in bytes (default 5 GB). */
@@ -74,5 +85,30 @@ public class AppProperties {
         private String region = "us-east-1";
         /** Optional SES configuration set for dedicated IP pools / event publishing. */
         private String configurationSet;
+    }
+
+    /**
+     * Per-user rate limits on uploads and downloads across rolling hour/day/month windows. A value
+     * of {@code 0} (or negative) disables that particular window. Downloads count both the owner's
+     * own downloads and anonymous downloads via that owner's share links.
+     */
+    @Data
+    public static class Limits {
+        @NestedConfigurationProperty
+        private Quota upload = new Quota(50, 500, 5_000);
+        @NestedConfigurationProperty
+        private Quota download = new Quota(200, 2_000, 20_000);
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Quota {
+        /** Max actions in a rolling 1-hour window. */
+        private int hourly;
+        /** Max actions in a rolling 24-hour window. */
+        private int daily;
+        /** Max actions in a rolling 30-day window. */
+        private int monthly;
     }
 }

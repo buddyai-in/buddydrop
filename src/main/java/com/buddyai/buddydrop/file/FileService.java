@@ -4,6 +4,7 @@ import com.buddyai.buddydrop.config.AppProperties;
 import com.buddyai.buddydrop.domain.AppUser;
 import com.buddyai.buddydrop.domain.FileStatus;
 import com.buddyai.buddydrop.domain.StoredFile;
+import com.buddyai.buddydrop.domain.UsageKind;
 import com.buddyai.buddydrop.exception.NotFoundException;
 import com.buddyai.buddydrop.exception.PayloadTooLargeException;
 import com.buddyai.buddydrop.exception.QuotaExceededException;
@@ -13,6 +14,7 @@ import com.buddyai.buddydrop.repository.AppUserRepository;
 import com.buddyai.buddydrop.repository.StoredFileRepository;
 import com.buddyai.buddydrop.storage.PresignedUpload;
 import com.buddyai.buddydrop.storage.StorageService;
+import com.buddyai.buddydrop.usage.UsageLimitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class FileService {
     private final StorageService storage;
     private final AppProperties properties;
     private final ShareCleanup shareCleanup;
+    private final UsageLimitService usageLimits;
 
     @Transactional(readOnly = true)
     public List<StoredFile> listFiles(UUID ownerId) {
@@ -68,6 +71,9 @@ public class FileService {
                     "Not enough space — %s of %s used".formatted(
                             StorageUsage.human(usage.usedBytes()), StorageUsage.human(usage.quotaBytes())));
         }
+
+        // Count this upload against the per-user hour/day/month limits (throws 429 if exceeded).
+        usageLimits.recordAction(ownerId, UsageKind.UPLOAD);
 
         UUID fileId = UUID.randomUUID();
         String key = storage.buildKey(ownerId, fileId, request.filename());
@@ -112,9 +118,11 @@ public class FileService {
         return file;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public String presignDownload(UUID ownerId, UUID fileId) {
         StoredFile file = requireReady(ownerId, fileId);
+        // Count this download against the per-user hour/day/month limits (throws 429 if exceeded).
+        usageLimits.recordAction(ownerId, UsageKind.DOWNLOAD);
         return storage.presignDownload(file.getS3Key(), file.getOriginalName());
     }
 
