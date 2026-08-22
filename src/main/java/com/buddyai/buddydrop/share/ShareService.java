@@ -5,6 +5,7 @@ import com.buddyai.buddydrop.domain.AppUser;
 import com.buddyai.buddydrop.domain.FileStatus;
 import com.buddyai.buddydrop.domain.ShareLink;
 import com.buddyai.buddydrop.domain.StoredFile;
+import com.buddyai.buddydrop.domain.UsageKind;
 import com.buddyai.buddydrop.exception.InvalidPasswordException;
 import com.buddyai.buddydrop.exception.NotFoundException;
 import com.buddyai.buddydrop.exception.ShareUnavailableException;
@@ -16,6 +17,7 @@ import com.buddyai.buddydrop.share.dto.ShareInfo;
 import com.buddyai.buddydrop.share.dto.ShareResult;
 import com.buddyai.buddydrop.share.dto.ShareSettings;
 import com.buddyai.buddydrop.storage.StorageService;
+import com.buddyai.buddydrop.usage.UsageLimitService;
 import com.buddyai.buddydrop.util.Tokens;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +50,7 @@ public class ShareService implements ShareCleanup {
     private final StorageService storage;
     private final PasswordEncoder passwordEncoder;
     private final AppProperties properties;
+    private final UsageLimitService usageLimits;
 
     // ---- owner side -------------------------------------------------------
 
@@ -146,6 +149,8 @@ public class ShareService implements ShareCleanup {
             }
         }
         StoredFile file = readyFile(link);
+        // Public downloads count against the file owner's per-hour/day/month limits (throws 429 if over).
+        usageLimits.recordAction(file.getOwnerId(), UsageKind.DOWNLOAD);
         link.setDownloadCount(link.getDownloadCount() + 1);
         log.info("Public download {} of file {} (count={})", rawToken.substring(0, 6), file.getId(),
                 link.getDownloadCount());
