@@ -41,6 +41,33 @@ Tests run entirely in-memory (H2 + a fake storage backend); no AWS or network ac
 
 ---
 
+## Run with Docker
+
+A multi-stage `Dockerfile` (Maven build → slim non-root JRE) and a `docker-compose.yml` (app +
+PostgreSQL) are included.
+
+```bash
+cp .env.example .env      # fill in AWS creds + bucket (email defaults to console logging)
+docker compose up --build
+```
+
+The stack runs the `prod` profile against PostgreSQL. `BUDDYDROP_COOKIE_SECURE=false` (set in the
+compose env) lets the session cookie work over plain HTTP on localhost — set it back to `true`
+behind HTTPS. App comes up on <http://localhost:8080> with a `/actuator/health` healthcheck.
+
+### Publish to Docker Hub
+
+```bash
+# builds, tags :<version> and :latest, and pushes
+DOCKER_USERNAME=you ./scripts/docker-publish.sh
+```
+
+Env knobs: `DOCKER_IMAGE` (default `$DOCKER_USERNAME/buddydrop`), `TAG` (defaults to the pom
+version), `DOCKER_PASSWORD` (a Docker Hub access token → auto `docker login`), `PUSH_LATEST`, and
+`PLATFORMS` (e.g. `linux/amd64,linux/arm64` for a multi-arch buildx push). It also reads `.env`.
+
+---
+
 ## How it works
 
 ### Passwordless sign-in
