@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Your account · BuddyAi Drop-In')}"></head>
+<body class="app-shell">
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <a th:replace="~{fragments/layout :: brand}"></a>
+    <div class="userchip">
+      <a th:href="@{/files}" class="btn btn-ghost btn-sm">Files</a>
+      <form class="logout-form" th:action="@{/auth/logout}" method="post">
+        <button class="btn-icon" type="submit" title="Sign out" aria-label="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="dash-head">
+    <div>
+      <h1>Your account</h1>
+      <div class="file-sub">Manage your identity, storage, and limits.</div>
+    </div>
+  </div>
+
+  <div class="profile-grid">
+    <section class="profile-card">
+      <div class="profile-id">
+        <span class="avatar avatar-lg" th:text="${#strings.toUpperCase(#strings.substring(email,0,2))}">YO</span>
+        <div>
+          <div class="profile-email" th:text="${email}">you@company.com</div>
+          <span class="plan-badge" th:text="${plan} + ' plan'">Free plan</span>
+        </div>
+      </div>
+      <dl class="kv">
+        <div><dt>Member since</dt><dd th:text="${memberSince}">Aug 1, 2026</dd></div>
+        <div><dt>Last sign-in</dt><dd th:text="${lastLogin}">Aug 22, 2026</dd></div>
+      </dl>
+    </section>
+
+    <section class="profile-card">
+      <h2 class="card-title">Storage</h2>
+      <div class="file-sub" style="margin-bottom:6px">
+        <span th:text="${usedHuman}">3.7 GB</span> of <span th:text="${quotaHuman}">10 GB</span> used
+      </div>
+      <div class="usage-meter" style="width:100%"><span th:style="'width:' + ${percent} + '%'"></span></div>
+      <p class="muted" style="margin-top:var(--space-3)">
+        <span th:text="${percent}">37</span>% of your plan's storage.
+      </p>
+    </section>
+  </div>
+
+  <section class="profile-card">
+    <h2 class="card-title">Rate limits</h2>
+    <p class="muted" style="margin-top:0">Uploads and downloads are capped on rolling hour / day / month windows.</p>
+    <div class="table-wrap">
+      <table class="usage-table">
+        <thead>
+          <tr><th>Action</th><th>Window</th><th>Used</th><th>Limit</th><th class="col-bar">Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="s : ${usage}">
+            <td th:text="${s.action()}">Uploads</td>
+            <td class="win" th:text="${s.window()}">hour</td>
+            <td class="num" th:text="${s.used()}">3</td>
+            <td class="num" th:text="${s.limitLabel()}">50</td>
+            <td class="col-bar">
+              <div class="mini-meter" th:classappend="${s.unlimited()} ? 'is-unlimited' : ''">
+                <span th:style="'width:' + ${s.percent()} + '%'"></span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="profile-card">
+    <h2 class="card-title">Plan</h2>
+    <p style="margin:0">You're on the <strong th:text="${plan}">Free</strong> plan — everything you need to
+      store and share files. Paid plans with more storage and higher limits are on the roadmap.</p>
+  </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

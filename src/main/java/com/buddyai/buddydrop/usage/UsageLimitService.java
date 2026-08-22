@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -63,6 +64,27 @@ public class UsageLimitService {
                     "%s limit reached (%d per %s). Please try again later."
                             .formatted(actionLabel(kind), limit, label));
         }
+    }
+
+    /** Current usage against each window for both actions — drives the profile page's usage table. */
+    @Transactional(readOnly = true)
+    public List<UsageWindowStat> snapshot(UUID userId) {
+        Instant now = Instant.now();
+        AppProperties.Quota up = properties.getLimits().getUpload();
+        AppProperties.Quota down = properties.getLimits().getDownload();
+        return List.of(
+                stat(userId, UsageKind.UPLOAD, "Uploads", "hour", HOUR, up.getHourly(), now),
+                stat(userId, UsageKind.UPLOAD, "Uploads", "day", DAY, up.getDaily(), now),
+                stat(userId, UsageKind.UPLOAD, "Uploads", "month", MONTH, up.getMonthly(), now),
+                stat(userId, UsageKind.DOWNLOAD, "Downloads", "hour", HOUR, down.getHourly(), now),
+                stat(userId, UsageKind.DOWNLOAD, "Downloads", "day", DAY, down.getDaily(), now),
+                stat(userId, UsageKind.DOWNLOAD, "Downloads", "month", MONTH, down.getMonthly(), now));
+    }
+
+    private UsageWindowStat stat(UUID userId, UsageKind kind, String action, String window,
+                                 Duration duration, int limit, Instant now) {
+        long used = events.countByUserIdAndKindAndCreatedAtAfter(userId, kind, now.minus(duration));
+        return new UsageWindowStat(action, window, used, limit);
     }
 
     private AppProperties.Quota quotaFor(UsageKind kind) {

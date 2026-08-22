@@ -17,9 +17,12 @@ import com.buddyai.buddydrop.storage.StorageService;
 import com.buddyai.buddydrop.usage.UsageLimitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,6 +49,12 @@ public class FileService {
     @Transactional(readOnly = true)
     public List<StoredFile> listFiles(UUID ownerId) {
         return files.findByOwnerIdAndStatusOrderByCreatedAtDesc(ownerId, FileStatus.READY);
+    }
+
+    /** One page of a user's READY files, newest first. */
+    @Transactional(readOnly = true)
+    public Page<StoredFile> listFiles(UUID ownerId, Pageable pageable) {
+        return files.findByOwnerIdAndStatusOrderByCreatedAtDesc(ownerId, FileStatus.READY, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -130,10 +139,31 @@ public class FileService {
     public void delete(UUID ownerId, UUID fileId) {
         StoredFile file = files.findByIdAndOwnerId(fileId, ownerId)
                 .orElseThrow(() -> new NotFoundException("File not found"));
-        shareCleanup.removeSharesForFile(fileId);
+        removeFile(file);
+        log.info("Deleted file {} for owner {}", fileId, ownerId);
+    }
+
+    /**
+     * Delete several of the caller's files at once. Only files the caller actually owns are touched;
+     * unknown or foreign ids are silently ignored (a bulk action shouldn't fail on a stale id).
+     *
+     * @return the number of files deleted
+     */
+    @Transactional
+    public int deleteMany(UUID ownerId, Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        List<StoredFile> owned = files.findByOwnerIdAndIdIn(ownerId, ids);
+        owned.forEach(this::removeFile);
+        log.info("Bulk-deleted {} file(s) for owner {}", owned.size(), ownerId);
+        return owned.size();
+    }
+
+    private void removeFile(StoredFile file) {
+        shareCleanup.removeSharesForFile(file.getId());
         storage.delete(file.getS3Key());
         files.delete(file);
-        log.info("Deleted file {} for owner {}", fileId, ownerId);
     }
 
     @Transactional(readOnly = true)

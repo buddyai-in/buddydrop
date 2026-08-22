@@ -87,7 +87,10 @@ StorageService (abstraction) ──► S3StorageService   ← all S3 access live
 | Share create/revoke/resolve, cap/expiry/password | `share/ShareService` |
 | Public download page | `share/PublicShareController`, `templates/share/*` |
 | Sending email (SES / SMTP / dev-log) | `mail/MailService` + `mail/EmailSender` impls, `config/SesConfig` |
-| Dashboard page assembly | `web/ViewController`, `templates/dashboard.html` |
+| Dashboard page assembly (paginated) | `web/ViewController`, `templates/dashboard.html` |
+| Profile / account page | `web/ProfileController`, `templates/profile.html` |
+| Bulk delete / share | `web/BulkActionsController` → `FileService.deleteMany`, `ShareService.shareMany` |
+| Subscription plans design | `docs/PLANS.md` |
 | Security rules / session | `security/SecurityConfig` |
 | Config knobs | `config/AppProperties`, `resources/application*.yml` |
 | Schema | `resources/db/migration/V1__baseline.sql` |

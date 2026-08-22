@@ -17,6 +17,7 @@
   const uploadsEl = document.getElementById("uploads");
   const fileList = document.getElementById("file-list");
   const emptyState = document.getElementById("empty-state");
+  const listToolbar = document.getElementById("list-toolbar");
   const toastEl = document.getElementById("toast");
 
   // ---- helpers ----------------------------------------------------------
@@ -113,6 +114,7 @@
 
   function addFileRow(file) {
     if (emptyState) emptyState.classList.add("hidden");
+    if (listToolbar) listToolbar.classList.remove("hidden");
     const kind = extOf(file.name).toLowerCase();
     const row = document.createElement("li");
     row.className = "file-row";
@@ -120,6 +122,7 @@
     row.dataset.fileId = file.id;
     row.dataset.fileName = file.name;
     row.innerHTML =
+      '<input type="checkbox" class="row-check" aria-label="Select file">' +
       '<span class="file-icon" data-kind="' + kind + '">' + extOf(file.name) + "</span>" +
       '<div class="file-meta"><div class="file-name"></div>' +
       '<div class="file-sub"><span class="fsize"></span> · just now</div></div>' +
@@ -179,6 +182,7 @@
       .then(() => {
         row.remove();
         if (!fileList.children.length && emptyState) emptyState.classList.remove("hidden");
+        refreshSelection();
         toast("File deleted");
       })
       .catch((e) => toast(e.message));
@@ -282,5 +286,134 @@
     badge.classList.remove("badge-shared");
     badge.classList.add("badge-private");
     badge.textContent = "private";
+  }
+
+  // ---- multi-select + bulk actions --------------------------------------
+
+  const selectAll = document.getElementById("select-all");
+  const bulkActions = document.getElementById("bulk-actions");
+  const selCount = document.getElementById("sel-count");
+
+  function checkedRows() {
+    return Array.from(fileList.querySelectorAll(".row-check")).filter((c) => c.checked);
+  }
+
+  function selectedIds() {
+    return checkedRows().map((c) => c.closest(".file-row").dataset.fileId);
+  }
+
+  function refreshSelection() {
+    const checks = Array.from(fileList.querySelectorAll(".row-check"));
+    const checked = checks.filter((c) => c.checked);
+    const n = checked.length;
+    if (bulkActions) bulkActions.classList.toggle("hidden", n === 0);
+    if (selCount) selCount.textContent = n + " selected";
+    if (selectAll) {
+      selectAll.checked = n > 0 && n === checks.length;
+      selectAll.indeterminate = n > 0 && n < checks.length;
+    }
+    checked.forEach((c) => c.closest(".file-row").classList.add("selected"));
+    checks.filter((c) => !c.checked).forEach((c) => c.closest(".file-row").classList.remove("selected"));
+  }
+
+  // Row checkbox changes bubble up to the list.
+  if (fileList) {
+    fileList.addEventListener("change", (e) => {
+      if (e.target.classList.contains("row-check")) refreshSelection();
+    });
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener("change", () => {
+      fileList.querySelectorAll(".row-check").forEach((c) => { c.checked = selectAll.checked; });
+      refreshSelection();
+    });
+  }
+
+  const bulkClearBtn = document.getElementById("bulk-clear-btn");
+  if (bulkClearBtn) {
+    bulkClearBtn.addEventListener("click", () => {
+      fileList.querySelectorAll(".row-check").forEach((c) => { c.checked = false; });
+      refreshSelection();
+    });
+  }
+
+  const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
+  if (bulkDeleteBtn) {
+    bulkDeleteBtn.addEventListener("click", () => {
+      const ids = selectedIds();
+      if (!ids.length) return;
+      if (!confirm("Delete " + ids.length + " file" + (ids.length > 1 ? "s" : "") + "? This cannot be undone.")) return;
+      api("POST", "/api/files/bulk-delete", { ids })
+        .then((res) => {
+          toast((res.deleted || ids.length) + " file(s) deleted");
+          // Reload so pagination, counts and the empty state resync.
+          window.location.reload();
+        })
+        .catch((e) => toast(e.message));
+    });
+  }
+
+  // ---- bulk share -------------------------------------------------------
+
+  const bulkShareBtn = document.getElementById("bulk-share-btn");
+  const bulkModal = document.getElementById("bulkshare-modal");
+  const bulkLinkList = document.getElementById("bulk-link-list");
+
+  function openBulkModal() { bulkModal.classList.add("open"); }
+  function closeBulkModal() { bulkModal.classList.remove("open"); }
+
+  if (bulkShareBtn) {
+    bulkShareBtn.addEventListener("click", () => {
+      const ids = selectedIds();
+      if (!ids.length) return;
+      bulkShareBtn.disabled = true;
+      api("POST", "/api/files/bulk-share", { ids, expiresInDays: 7 })
+        .then((links) => {
+          renderBulkLinks(links);
+          links.forEach((l) => {
+            const row = document.getElementById("row-" + l.fileId);
+            if (row) markShared(row, { expiresAt: true });
+          });
+          openBulkModal();
+        })
+        .catch((e) => toast(e.message))
+        .finally(() => { bulkShareBtn.disabled = false; });
+    });
+  }
+
+  function renderBulkLinks(links) {
+    bulkLinkList.innerHTML = "";
+    links.forEach((l) => {
+      const li = document.createElement("li");
+      li.className = "link-item";
+      li.innerHTML =
+        '<div class="link-name"></div>' +
+        '<div class="linkbox"><input type="text" readonly><button class="btn btn-ghost link-copy" type="button">Copy</button></div>';
+      li.querySelector(".link-name").textContent = l.name;
+      const input = li.querySelector("input");
+      input.value = l.url;
+      li.querySelector(".link-copy").addEventListener("click", () => {
+        navigator.clipboard.writeText(l.url)
+          .then(() => toast("Link copied"))
+          .catch(() => { input.select(); document.execCommand("copy"); toast("Link copied"); });
+      });
+      bulkLinkList.appendChild(li);
+    });
+  }
+
+  const bulkCopyAll = document.getElementById("bulk-copy-all");
+  if (bulkCopyAll) {
+    bulkCopyAll.addEventListener("click", () => {
+      const urls = Array.from(bulkLinkList.querySelectorAll("input")).map((i) => i.value).join("\n");
+      if (!urls) return;
+      navigator.clipboard.writeText(urls).then(() => toast("All links copied")).catch(() => toast("Copy failed"));
+    });
+  }
+
+  const bulkClose = document.getElementById("bulkshare-close");
+  if (bulkClose) bulkClose.addEventListener("click", closeBulkModal);
+  if (bulkModal) {
+    bulkModal.addEventListener("click", (e) => { if (e.target === bulkModal) closeBulkModal(); });
   }
 })();

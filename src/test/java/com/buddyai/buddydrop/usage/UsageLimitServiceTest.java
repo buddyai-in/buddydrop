@@ -78,6 +78,22 @@ class UsageLimitServiceTest {
         assertThatCode(() -> usageLimits.recordAction(user, UsageKind.DOWNLOAD)).doesNotThrowAnyException();
     }
 
+    @Test
+    void snapshotReportsUsagePerWindow() {
+        UUID user = newUser();
+        assertThat(usageLimits.snapshot(user)).hasSize(6); // uploads + downloads × 3 windows
+
+        usageLimits.recordAction(user, UsageKind.UPLOAD);
+        usageLimits.recordAction(user, UsageKind.UPLOAD);
+
+        UsageWindowStat uploadHour = usageLimits.snapshot(user).stream()
+                .filter(s -> s.action().equals("Uploads") && s.window().equals("hour"))
+                .findFirst().orElseThrow();
+        assertThat(uploadHour.used()).isEqualTo(2);
+        assertThat(uploadHour.limit()).isEqualTo(2);
+        assertThat(uploadHour.percent()).isEqualTo(100);
+    }
+
     private UUID newUser() {
         return users.save(AppUser.builder()
                 .email("u-" + UUID.randomUUID() + "@ex.com").quotaBytes(1_000_000).build()).getId();
