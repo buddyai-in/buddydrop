@@ -163,8 +163,12 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -.015em; text-wra
 .toast { position: fixed; bottom: var(--space-5); left: 50%; transform: translateX(-50%) translateY(120%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 99px; font-size: 13.5px; box-shadow: var(--shadow); transition: transform .25s ease; z-index: 80; }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
+/* ---- sticky-footer shell: content grows so the footer pins to the bottom of the viewport ---- */
+body.app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+body.app-shell .container { flex: 1 0 auto; }
+
 /* ---- site footer ---- */
-.site-footer { border-top: 1px solid var(--line); margin-top: var(--space-6); background: var(--surface); }
+.site-footer { border-top: 1px solid var(--line); margin-top: var(--space-6); background: var(--surface); flex-shrink: 0; }
 .footer-inner { max-width: 900px; margin: 0 auto; padding: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
 .footer-brand { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-weight: 600; font-size: 14.5px; color: var(--ink-2); }
 .logo-sm { width: 22px; height: 22px; border-radius: 6px; }
