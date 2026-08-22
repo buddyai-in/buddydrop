@@ -50,7 +50,10 @@ class DashboardFeaturesTest {
                 .andExpect(model().attribute("files", hasSize(12)))
                 .andExpect(model().attribute("totalPages", 2))
                 .andExpect(model().attribute("hasNext", true))
-                .andExpect(model().attribute("hasPrev", false));
+                .andExpect(model().attribute("hasPrev", false))
+                // the pager nav must actually render in the HTML, with a working Next link
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("class=\"pager\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/files?page=1")));
 
         mvc.perform(get("/files").param("page", "1").with(authentication(authOf(user))))
                 .andExpect(status().isOk())

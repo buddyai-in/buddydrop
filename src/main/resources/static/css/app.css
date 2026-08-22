@@ -78,13 +78,13 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -.015em; text-wra
 
 /* ---- app top bar ---- */
 .appbar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
-.appbar-inner { max-width: 900px; margin: 0 auto; padding: var(--space-3) var(--space-5); display: flex; align-items: center; justify-content: space-between; }
+.appbar-inner { max-width: 1200px; margin: 0 auto; padding: var(--space-3) var(--space-5); display: flex; align-items: center; justify-content: space-between; }
 .userchip { display: inline-flex; align-items: center; gap: var(--space-3); }
 .userchip .email { font-size: 13px; color: var(--ink-2); }
 .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-wash); color: var(--accent-2); display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; font-weight: 500; border: 1px solid var(--line-2); }
 .logout-form { display: inline; }
 
-.container { max-width: 900px; margin: 0 auto; padding: var(--space-6) var(--space-5) var(--space-7); }
+.container { max-width: 1200px; margin: 0 auto; padding: var(--space-6) var(--space-5) var(--space-7); }
 
 /* ---- dashboard header ---- */
 .dash-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
@@ -179,7 +179,7 @@ body.app-shell .container { flex: 1 0 auto; }
 
 /* ---- site footer ---- */
 .site-footer { border-top: 1px solid var(--line); margin-top: var(--space-6); background: var(--surface); flex-shrink: 0; }
-.footer-inner { max-width: 900px; margin: 0 auto; padding: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.footer-inner { max-width: 1200px; margin: 0 auto; padding: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
 .footer-brand { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-weight: 600; font-size: 14.5px; color: var(--ink-2); }
 .logo-sm { width: 22px; height: 22px; border-radius: 6px; }
 .logo-sm svg { width: 12px; height: 12px; }
