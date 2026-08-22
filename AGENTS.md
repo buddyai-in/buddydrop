@@ -80,6 +80,7 @@ StorageService (abstraction) ──► S3StorageService   ← all S3 access live
 | Sign-in / token logic | `auth/MagicLinkService`, `auth/AuthController` |
 | Rate limiting | `auth/RateLimitService` |
 | Quota, upload presign/confirm, delete | `file/FileService` |
+| Per-user upload/download rate limits | `usage/UsageLimitService` (windows: hour/day/month) |
 | Dashboard JSON API | `file/FileController` |
 | S3 presigning / delete / head | `storage/S3StorageService` |
 | Bucket CORS for browser uploads | `storage/BucketCorsConfigurer` (opt-in via `buddydrop.storage.configure-cors`) |

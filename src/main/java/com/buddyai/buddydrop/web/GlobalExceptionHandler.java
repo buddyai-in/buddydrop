@@ -3,6 +3,7 @@ package com.buddyai.buddydrop.web;
 import com.buddyai.buddydrop.exception.NotFoundException;
 import com.buddyai.buddydrop.exception.PayloadTooLargeException;
 import com.buddyai.buddydrop.exception.QuotaExceededException;
+import com.buddyai.buddydrop.exception.RateLimitExceededException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PayloadTooLargeException.class)
     public ResponseEntity<ApiError> tooLarge(PayloadTooLargeException e) {
         return build(HttpStatus.PAYLOAD_TOO_LARGE, e.getMessage());
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiError> rateLimited(RateLimitExceededException e) {
+        return build(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

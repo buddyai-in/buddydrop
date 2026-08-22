@@ -2,6 +2,7 @@ package com.buddyai.buddydrop.share;
 
 import com.buddyai.buddydrop.exception.InvalidPasswordException;
 import com.buddyai.buddydrop.exception.NotFoundException;
+import com.buddyai.buddydrop.exception.RateLimitExceededException;
 import com.buddyai.buddydrop.exception.ShareUnavailableException;
 import com.buddyai.buddydrop.web.DisplayLabels;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,8 @@ public class PublicShareController {
             populate(model, shareService.resolvePublic(token));
             model.addAttribute("error", e.getMessage());
             return "share/password";
-        } catch (NotFoundException | ShareUnavailableException e) {
+        } catch (NotFoundException | ShareUnavailableException | RateLimitExceededException e) {
+            // Rate limit here means the file owner is over their download limit — surface it kindly.
             model.addAttribute("reason", e.getMessage());
             return "share/unavailable";
         }

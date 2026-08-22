@@ -95,6 +95,8 @@ environment variables. Key ones:
 | `BUDDYDROP_STORAGE_CONFIGURE_CORS` | Apply bucket CORS on startup (needs `s3:PutBucketCORS`) | `false` (dev: `true`) |
 | `BUDDYDROP_QUOTA_BYTES` | Per-account storage quota | 10 GB |
 | `BUDDYDROP_MAX_UPLOAD_BYTES` | Max single upload | 5 GB |
+| `BUDDYDROP_UPLOAD_LIMIT_HOURLY` / `_DAILY` / `_MONTHLY` | Per-user upload caps (rolling windows; `0` disables) | 50 / 500 / 5000 |
+| `BUDDYDROP_DOWNLOAD_LIMIT_HOURLY` / `_DAILY` / `_MONTHLY` | Per-user download caps (rolling windows; `0` disables) | 200 / 2000 / 20000 |
 | `BUDDYDROP_MAIL_PROVIDER` | Email transport: `log`, `ses`, or `smtp` | `log` (dev) / `ses` (prod) |
 | `BUDDYDROP_MAIL_FROM` | From address on emails | `no-reply@buddydrop.app` |
 | `BUDDYDROP_SES_REGION` | SES region (falls back to `AWS_REGION`) | `us-east-1` |
@@ -103,6 +105,14 @@ environment variables. Key ones:
 **Production** (`prod` profile) additionally reads `BUDDYDROP_DB_URL` / `BUDDYDROP_DB_USER` /
 `BUDDYDROP_DB_PASSWORD`. AWS credentials come from the standard provider chain (env vars, profile,
 or IAM role) — never hardcoded.
+
+### Rate limits
+
+Uploads and downloads are capped per user across rolling **hour / day / month** windows, counted in
+the `usage_event` table (persistent, so the monthly window survives restarts and is shared across
+nodes). Downloads count both the owner's own downloads **and** anonymous downloads through that
+owner's share links. Exceeding a window returns HTTP `429` (a friendly page on the public share
+route). Set any limit to `0` to disable that window. Defaults are in the table above.
 
 ### Email transport
 
@@ -155,6 +165,7 @@ src/main/java/com/buddyai/buddydrop/
 ├─ storage/     StorageService abstraction + S3 implementation
 ├─ file/        file lifecycle service + JSON API
 ├─ share/       sharing service, owner API, public download controller
+├─ usage/       per-user upload/download rate limiting (hour/day/month)
 ├─ mail/        transactional email (EmailSender: SES / SMTP / dev-logging)
 ├─ security/    Spring Security config + principal
 ├─ web/         dashboard view controller, error handling, display helpers
