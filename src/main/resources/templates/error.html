@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Something went wrong · BuddyDrop')}"></head>
+<head th:replace="~{fragments/layout :: head('Something went wrong · BuddyAi Drop-In')}"></head>
 <body>
 <main class="center-shell">
   <div class="public-card">
     <h1 th:text="${status} ?: 'Error'">Error</h1>
     <p class="file-sub" th:text="${error} ?: 'Something went wrong.'">Something went wrong.</p>
-    <a class="btn btn-primary btn-block" style="margin-top:var(--space-4)" th:href="@{/}">Back to BuddyDrop</a>
+    <a class="btn btn-primary btn-block" style="margin-top:var(--space-4)" th:href="@{/}">Back to BuddyAi Drop-In</a>
   </div>
 </main>
 </body>

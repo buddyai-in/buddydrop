@@ -52,6 +52,12 @@ public class AppProperties {
         private boolean pathStyleAccess = false;
         /** Validity window for issued presigned URLs. */
         private Duration presignTtl = Duration.ofMinutes(10);
+        /**
+         * When true, apply a CORS rule to the bucket on startup allowing browser uploads from
+         * {@code base-url}. Convenient for dev; in production prefer configuring bucket CORS
+         * out-of-band and leaving this false (so the app needs no {@code s3:PutBucketCORS}).
+         */
+        private boolean configureCors = false;
         /** Per-account storage quota in bytes (default 10 GB). */
         private long quotaBytes = 10L * 1024 * 1024 * 1024;
         /** Largest single upload accepted, in bytes (default 5 GB). */

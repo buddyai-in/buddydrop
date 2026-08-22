@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Download · BuddyDrop')}"></head>
+<head th:replace="~{fragments/layout :: head('Download · BuddyAi Drop-In')}"></head>
 <body>
 <main class="center-shell">
   <div class="public-card">
@@ -8,7 +8,7 @@
     <h1 th:text="${filename}">document.pdf</h1>
     <p class="file-sub">
       <span th:text="${sizeHuman}">2.4 MB</span>
-      · shared by <span th:text="${sharedBy}">a BuddyDrop user</span>
+      · shared by <span th:text="${sharedBy}">a BuddyAi Drop-In user</span>
       <span th:if="${expiryLabel}"> · <span th:text="${expiryLabel}">expires in 2 days</span></span>
     </p>
     <form th:action="@{'/s/' + ${token}}" method="post">
@@ -19,7 +19,7 @@
         Download
       </button>
     </form>
-    <p class="muted public-footer">Delivered securely by <a th:href="@{/login}">BuddyDrop</a></p>
+    <p class="muted public-footer">Delivered securely by <a th:href="@{/login}">BuddyAi Drop-In</a></p>
   </div>
 </main>
 </body>

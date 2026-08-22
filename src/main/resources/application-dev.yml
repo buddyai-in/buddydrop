@@ -9,6 +9,12 @@ spring:
   thymeleaf:
     cache: false
 
+buddydrop:
+  storage:
+    # Auto-apply bucket CORS on startup so browser uploads from http://localhost:8080 are allowed.
+    # Requires the dev credentials to have s3:PutBucketCORS on the bucket.
+    configure-cors: true
+
 logging:
   level:
     com.buddyai.buddydrop: DEBUG

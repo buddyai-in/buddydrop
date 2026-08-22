@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Confirm sign-in · BuddyDrop')}"></head>
+<head th:replace="~{fragments/layout :: head('Confirm sign-in · BuddyAi Drop-In')}"></head>
 <body>
 <main class="center-shell">
   <div class="auth-card">
@@ -13,7 +13,7 @@
     <!-- Consuming the token requires this explicit POST, so an email scanner's preview GET can't spend it. -->
     <form th:action="@{/auth/verify}" method="post">
       <input type="hidden" name="token" th:value="${token}">
-      <button class="btn btn-primary btn-block" type="submit">Sign in to BuddyDrop</button>
+      <button class="btn btn-primary btn-block" type="submit">Sign in to BuddyAi Drop-In</button>
     </form>
   </div>
 </main>
