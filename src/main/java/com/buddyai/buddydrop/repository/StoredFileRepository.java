@@ -2,10 +2,13 @@ package com.buddyai.buddydrop.repository;
 
 import com.buddyai.buddydrop.domain.FileStatus;
 import com.buddyai.buddydrop.domain.StoredFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,6 +16,12 @@ import java.util.UUID;
 public interface StoredFileRepository extends JpaRepository<StoredFile, UUID> {
 
     List<StoredFile> findByOwnerIdAndStatusOrderByCreatedAtDesc(UUID ownerId, FileStatus status);
+
+    /** One page of a user's files, newest first — backs the paginated dashboard. */
+    Page<StoredFile> findByOwnerIdAndStatusOrderByCreatedAtDesc(UUID ownerId, FileStatus status, Pageable pageable);
+
+    /** Owned files among the given ids — the ownership filter for bulk operations. */
+    List<StoredFile> findByOwnerIdAndIdIn(UUID ownerId, Collection<UUID> ids);
 
     Optional<StoredFile> findByIdAndOwnerId(UUID id, UUID ownerId);
 

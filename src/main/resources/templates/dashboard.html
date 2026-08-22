@@ -8,7 +8,8 @@
     <a th:replace="~{fragments/layout :: brand}"></a>
     <div class="userchip">
       <span class="email" th:text="${email}">you@company.com</span>
-      <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(email,0,2))}">YO</span>
+      <a th:href="@{/profile}" class="avatar" title="Your profile" aria-label="Your profile"
+         th:text="${#strings.toUpperCase(#strings.substring(email,0,2))}">YO</a>
       <form class="logout-form" th:action="@{/auth/logout}" method="post">
         <button class="btn-icon" type="submit" title="Sign out" aria-label="Sign out">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -51,10 +52,38 @@
 
   <ul class="uploads" id="uploads" aria-live="polite"></ul>
 
+  <!-- Select-all + bulk actions toolbar -->
+  <div class="list-toolbar" id="list-toolbar" th:classappend="${hasFiles} ? '' : 'hidden'">
+    <label class="select-all">
+      <input type="checkbox" id="select-all" aria-label="Select all files on this page">
+      <span>Select all</span>
+    </label>
+    <div class="bulk-actions hidden" id="bulk-actions">
+      <span class="sel-count" id="sel-count">0 selected</span>
+      <button class="btn btn-ghost" id="bulk-share-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>
+        </svg>
+        Share
+      </button>
+      <button class="btn btn-danger" id="bulk-delete-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+          <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a1 1 0 01-1 1H7a1 1 0 01-1-1V6"/>
+        </svg>
+        Delete
+      </button>
+      <button class="btn-icon" id="bulk-clear-btn" type="button" title="Clear selection" aria-label="Clear selection">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </div>
+
   <!-- Existing files -->
   <ul class="file-list" id="file-list">
     <li class="file-row" th:each="f : ${files}"
         th:id="'row-' + ${f.id}" th:data-file-id="${f.id}" th:data-file-name="${f.name}">
+      <input type="checkbox" class="row-check" aria-label="Select file">
       <span class="file-icon" th:attr="data-kind=${#strings.toLowerCase(f.ext)}" th:text="${f.ext}">PDF</span>
       <div class="file-meta">
         <div class="file-name" th:text="${f.name}">document.pdf</div>
@@ -83,7 +112,17 @@
     </li>
   </ul>
 
-  <div class="empty" id="empty-state" th:if="${files.isEmpty()}">
+  <!-- Pagination -->
+  <nav class="pager" th:if="${totalPages > 1}" aria-label="File pages">
+    <a th:if="${hasPrev}" class="btn btn-ghost" th:href="@{/files(page=${prevPage})}">← Prev</a>
+    <span th:unless="${hasPrev}" class="btn btn-ghost disabled" aria-disabled="true">← Prev</span>
+    <span class="pager-status">Page <b th:text="${currentPage}">1</b> of <span th:text="${totalPages}">3</span>
+      · <span th:text="${totalFiles}">30</span> files</span>
+    <a th:if="${hasNext}" class="btn btn-ghost" th:href="@{/files(page=${nextPage})}">Next →</a>
+    <span th:unless="${hasNext}" class="btn btn-ghost disabled" aria-disabled="true">Next →</span>
+  </nav>
+
+  <div class="empty" id="empty-state" th:classappend="${hasFiles} ? 'hidden' : ''">
     <h2>No files yet</h2>
     <p class="muted">Upload your first file to get started — then share it with a secure link.</p>
   </div>
@@ -91,7 +130,7 @@
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
-<!-- Share dialog -->
+<!-- Share dialog (single file) -->
 <div class="modal-backdrop" id="share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">
   <div class="modal">
     <h2 id="share-title">Share file</h2>
@@ -128,6 +167,19 @@
         <button class="btn btn-ghost" id="share-close" type="button">Close</button>
         <button class="btn btn-primary" id="share-save" type="button">Create link</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk-share results dialog -->
+<div class="modal-backdrop" id="bulkshare-modal" role="dialog" aria-modal="true" aria-labelledby="bulkshare-title">
+  <div class="modal">
+    <h2 id="bulkshare-title">Share links</h2>
+    <p class="modal-sub">Fresh links for the selected files — valid for 7 days. Copy and send them.</p>
+    <ul class="link-list" id="bulk-link-list"></ul>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="bulkshare-close" type="button">Close</button>
+      <button class="btn btn-primary" id="bulk-copy-all" type="button">Copy all links</button>
     </div>
   </div>
 </div>
