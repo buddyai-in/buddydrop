@@ -200,8 +200,11 @@
   const revokeBtn = document.getElementById("revoke-btn");
   const copyBtn = document.getElementById("copy-btn");
   let activeShare = null; // { row, id, exists }
+  let shareMode = "file"; // "file" | "bundle"
+  let bundleIds = [];
 
   function openShare(row, id) {
+    shareMode = "file";
     activeShare = { row, id, exists: false };
     shareTitle.textContent = 'Share "' + row.dataset.fileName + '"';
     shareUrl.value = "";
@@ -224,25 +227,63 @@
     modal.classList.add("open");
   }
 
+  // Bundle mode: share several selected files as ONE link (ZIP), with the same options.
+  function openBundleShare(ids) {
+    shareMode = "bundle";
+    bundleIds = ids;
+    activeShare = null;
+    shareTitle.textContent = "Share " + ids.length + " file" + (ids.length > 1 ? "s" : "");
+    document.querySelector(".modal-sub").textContent =
+      "One link that downloads all " + ids.length + " files as a ZIP.";
+    shareUrl.value = "";
+    shareUrl.placeholder = "Create a link below";
+    optExpiry.value = "7";
+    optCap.value = "";
+    optPass.value = "";
+    revokeBtn.classList.add("hidden");
+    saveBtn.textContent = "Create link";
+    modal.classList.add("open");
+  }
+
   function closeShare() {
     modal.classList.remove("open");
     activeShare = null;
+    shareMode = "file";
+    document.querySelector(".modal-sub").textContent = "Anyone with the link can download this file.";
   }
 
   document.getElementById("share-close").addEventListener("click", closeShare);
   modal.addEventListener("click", (e) => { if (e.target === modal) closeShare(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.classList.contains("open")) closeShare(); });
 
-  saveBtn.addEventListener("click", () => {
-    if (!activeShare) return;
-    const settings = {
+  function readOptions() {
+    return {
       expiresInDays: optExpiry.value ? parseInt(optExpiry.value, 10) : null,
       maxDownloads: optCap.value ? parseInt(optCap.value, 10) : null,
       password: optPass.value ? optPass.value : "",
-      // Existing link + no new URL yet -> regenerate so the owner gets a copyable URL.
-      regenerate: activeShare.exists,
     };
+  }
+
+  saveBtn.addEventListener("click", () => {
     saveBtn.disabled = true;
+    if (shareMode === "bundle") {
+      api("POST", "/api/files/bulk-share", { ids: bundleIds, ...readOptions() })
+        .then((result) => {
+          shareUrl.value = result.url;
+          shareUrl.select();
+          bundleIds.forEach((id) => {
+            const row = document.getElementById("row-" + id);
+            if (row) markShared(row, { expiresAt: optExpiry.value !== "" });
+          });
+          toast("Bundle link ready");
+        })
+        .catch((e) => toast(e.message))
+        .finally(() => { saveBtn.disabled = false; });
+      return;
+    }
+    if (!activeShare) { saveBtn.disabled = false; return; }
+    // Existing link + no new URL yet -> regenerate so the owner gets a copyable URL.
+    const settings = { ...readOptions(), regenerate: activeShare.exists };
     api("POST", "/api/files/" + activeShare.id + "/share", settings)
       .then((result) => {
         if (result.url) { shareUrl.value = result.url; shareUrl.select(); }
@@ -354,66 +395,13 @@
     });
   }
 
-  // ---- bulk share -------------------------------------------------------
+  // ---- bulk share -> one bundle link (opens the shared modal in bundle mode) ----
 
   const bulkShareBtn = document.getElementById("bulk-share-btn");
-  const bulkModal = document.getElementById("bulkshare-modal");
-  const bulkLinkList = document.getElementById("bulk-link-list");
-
-  function openBulkModal() { bulkModal.classList.add("open"); }
-  function closeBulkModal() { bulkModal.classList.remove("open"); }
-
   if (bulkShareBtn) {
     bulkShareBtn.addEventListener("click", () => {
       const ids = selectedIds();
-      if (!ids.length) return;
-      bulkShareBtn.disabled = true;
-      api("POST", "/api/files/bulk-share", { ids, expiresInDays: 7 })
-        .then((links) => {
-          renderBulkLinks(links);
-          links.forEach((l) => {
-            const row = document.getElementById("row-" + l.fileId);
-            if (row) markShared(row, { expiresAt: true });
-          });
-          openBulkModal();
-        })
-        .catch((e) => toast(e.message))
-        .finally(() => { bulkShareBtn.disabled = false; });
+      if (ids.length) openBundleShare(ids);
     });
-  }
-
-  function renderBulkLinks(links) {
-    bulkLinkList.innerHTML = "";
-    links.forEach((l) => {
-      const li = document.createElement("li");
-      li.className = "link-item";
-      li.innerHTML =
-        '<div class="link-name"></div>' +
-        '<div class="linkbox"><input type="text" readonly><button class="btn btn-ghost link-copy" type="button">Copy</button></div>';
-      li.querySelector(".link-name").textContent = l.name;
-      const input = li.querySelector("input");
-      input.value = l.url;
-      li.querySelector(".link-copy").addEventListener("click", () => {
-        navigator.clipboard.writeText(l.url)
-          .then(() => toast("Link copied"))
-          .catch(() => { input.select(); document.execCommand("copy"); toast("Link copied"); });
-      });
-      bulkLinkList.appendChild(li);
-    });
-  }
-
-  const bulkCopyAll = document.getElementById("bulk-copy-all");
-  if (bulkCopyAll) {
-    bulkCopyAll.addEventListener("click", () => {
-      const urls = Array.from(bulkLinkList.querySelectorAll("input")).map((i) => i.value).join("\n");
-      if (!urls) return;
-      navigator.clipboard.writeText(urls).then(() => toast("All links copied")).catch(() => toast("Copy failed"));
-    });
-  }
-
-  const bulkClose = document.getElementById("bulkshare-close");
-  if (bulkClose) bulkClose.addEventListener("click", closeBulkModal);
-  if (bulkModal) {
-    bulkModal.addEventListener("click", (e) => { if (e.target === bulkModal) closeBulkModal(); });
   }
 })();

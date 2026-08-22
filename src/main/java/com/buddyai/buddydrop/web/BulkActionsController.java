@@ -3,9 +3,9 @@ package com.buddyai.buddydrop.web;
 import com.buddyai.buddydrop.file.FileService;
 import com.buddyai.buddydrop.file.dto.BulkDeleteRequest;
 import com.buddyai.buddydrop.security.AppUserPrincipal;
-import com.buddyai.buddydrop.share.ShareService;
-import com.buddyai.buddydrop.share.dto.BulkShareLink;
+import com.buddyai.buddydrop.share.ShareBundleService;
 import com.buddyai.buddydrop.share.dto.BulkShareRequest;
+import com.buddyai.buddydrop.share.dto.BundleShareResult;
 import com.buddyai.buddydrop.share.dto.ShareSettings;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Multi-select bulk actions from the dashboard: delete or share several selected files at once.
- * Spans the file and share services, so it lives in the web layer alongside the dashboard it serves.
- * Ownership is enforced inside each service; foreign ids are ignored.
+ * Multi-select bulk actions from the dashboard: delete several files, or share several as a single
+ * bundle link (one URL that downloads them all as a ZIP). Spans the file and share modules, so it
+ * lives in the web layer alongside the dashboard it serves. Ownership is enforced in each service.
  */
 @RestController
 @RequestMapping("/api/files")
@@ -28,7 +28,7 @@ import java.util.Map;
 public class BulkActionsController {
 
     private final FileService fileService;
-    private final ShareService shareService;
+    private final ShareBundleService bundleService;
 
     @PostMapping("/bulk-delete")
     public Map<String, Integer> bulkDelete(@AuthenticationPrincipal AppUserPrincipal user,
@@ -36,11 +36,14 @@ public class BulkActionsController {
         return Map.of("deleted", fileService.deleteMany(user.id(), request.ids()));
     }
 
+    /** Share the selected files as one bundle; returns the single link. */
     @PostMapping("/bulk-share")
-    public List<BulkShareLink> bulkShare(@AuthenticationPrincipal AppUserPrincipal user,
-                                         @RequestBody BulkShareRequest request) {
+    public BundleShareResult bulkShare(@AuthenticationPrincipal AppUserPrincipal user,
+                                       @RequestBody BulkShareRequest request) {
         ShareSettings settings = new ShareSettings(
-                request.expiresInDays(), request.maxDownloads(), request.password(), true);
-        return shareService.shareMany(user.id(), request.ids(), settings);
+                request.expiresInDays(), request.maxDownloads(), request.password(), false);
+        List<java.util.UUID> ids = request.ids();
+        String url = bundleService.create(user.id(), ids, settings);
+        return new BundleShareResult(url, ids == null ? 0 : ids.size());
     }
 }

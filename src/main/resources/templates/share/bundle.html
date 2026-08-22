@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Download files · BuddyAi Drop-In')}"></head>
+<body>
+<main class="center-shell">
+  <div class="public-card">
+    <span class="file-icon" data-kind="zip" style="width:54px;height:54px;border-radius:14px;margin:0 auto var(--space-4);font-size:12px">ZIP</span>
+    <h1><span th:text="${count}">3</span> files</h1>
+    <p class="file-sub">
+      <span th:text="${totalHuman}">12 MB</span>
+      · shared by <span th:text="${sharedBy}">a BuddyAi Drop-In user</span>
+      <span th:if="${expiryLabel}"> · <span th:text="${expiryLabel}">expires in 7 days</span></span>
+    </p>
+
+    <ul class="bundle-list">
+      <li th:each="f : ${files}">
+        <span class="file-icon" th:attr="data-kind=${#strings.toLowerCase(#strings.substringAfter(f.name(),'.'))}"
+              style="width:28px;height:28px;font-size:9px" th:text="${#strings.toUpperCase(#strings.substringAfter(f.name(),'.'))}">PDF</span>
+        <span class="bundle-name" th:text="${f.name()}">report.pdf</span>
+        <span class="bundle-size" th:text="${f.sizeHuman()}">2.4 MB</span>
+      </li>
+    </ul>
+
+    <a class="btn btn-primary btn-block" th:href="@{'/d/' + ${token} + '/zip'}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+      </svg>
+      Download all as ZIP
+    </a>
+    <p class="muted public-footer">Delivered securely by <a th:href="@{/login}">BuddyAi Drop-In</a></p>
+  </div>
+</main>
+</body>
+</html>

@@ -13,7 +13,6 @@ import com.buddyai.buddydrop.file.ShareCleanup;
 import com.buddyai.buddydrop.repository.AppUserRepository;
 import com.buddyai.buddydrop.repository.ShareLinkRepository;
 import com.buddyai.buddydrop.repository.StoredFileRepository;
-import com.buddyai.buddydrop.share.dto.BulkShareLink;
 import com.buddyai.buddydrop.share.dto.ShareInfo;
 import com.buddyai.buddydrop.share.dto.ShareResult;
 import com.buddyai.buddydrop.share.dto.ShareSettings;
@@ -117,28 +116,6 @@ public class ShareService implements ShareCleanup {
         requireOwnedFile(ownerId, fileId);
         shares.deleteByFileId(fileId);
         log.info("Revoked share for file {}", fileId);
-    }
-
-    /**
-     * Share several of the caller's files at once with the same options, minting a fresh link for
-     * each so every URL can be returned. Only owned files are touched; unknown ids are ignored.
-     */
-    @Transactional
-    public List<BulkShareLink> shareMany(UUID ownerId, Collection<UUID> ids, ShareSettings settings) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
-        }
-        // Force a fresh token per file so a copyable URL is always produced.
-        ShareSettings perFile = new ShareSettings(
-                settings.expiresInDays(), settings.maxDownloads(), settings.password(), true);
-
-        List<BulkShareLink> links = new ArrayList<>();
-        for (StoredFile file : files.findByOwnerIdAndIdIn(ownerId, ids)) {
-            ShareResult result = share(ownerId, file.getId(), perFile);
-            links.add(new BulkShareLink(file.getId(), file.getOriginalName(), result.url()));
-        }
-        log.info("Bulk-shared {} file(s) for owner {}", links.size(), ownerId);
-        return links;
     }
 
     @Override

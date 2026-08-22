@@ -4,7 +4,7 @@ import com.buddyai.buddydrop.domain.AppUser;
 import com.buddyai.buddydrop.domain.FileStatus;
 import com.buddyai.buddydrop.domain.StoredFile;
 import com.buddyai.buddydrop.repository.AppUserRepository;
-import com.buddyai.buddydrop.repository.ShareLinkRepository;
+import com.buddyai.buddydrop.repository.ShareBundleRepository;
 import com.buddyai.buddydrop.repository.StoredFileRepository;
 import com.buddyai.buddydrop.security.AppUserPrincipal;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class DashboardFeaturesTest {
     @Autowired MockMvc mvc;
     @Autowired AppUserRepository users;
     @Autowired StoredFileRepository files;
-    @Autowired ShareLinkRepository shares;
+    @Autowired ShareBundleRepository bundles;
 
     @Test
     void dashboardIsPaginated() throws Exception {
@@ -79,7 +79,7 @@ class DashboardFeaturesTest {
     }
 
     @Test
-    void bulkShareReturnsALinkPerFile() throws Exception {
+    void bulkShareCreatesOneBundleLink() throws Exception {
         AppUser user = newUser();
         List<StoredFile> seeded = seedFiles(user, 2);
 
@@ -89,12 +89,13 @@ class DashboardFeaturesTest {
                         .content("{\"ids\":[\"" + seeded.get(0).getId() + "\",\"" + seeded.get(1).getId()
                                 + "\"],\"expiresInDays\":7}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].url").exists())
-                .andExpect(jsonPath("$[1].url").exists());
+                .andExpect(jsonPath("$.url").exists())
+                .andExpect(jsonPath("$.url", org.hamcrest.Matchers.containsString("/d/")))
+                .andExpect(jsonPath("$.fileCount").value(2));
 
-        assertThat(shares.findByFileId(seeded.get(0).getId())).isPresent();
-        assertThat(shares.findByFileId(seeded.get(1).getId())).isPresent();
+        // exactly one bundle was created, covering both files
+        assertThat(bundles.findAll()).hasSize(1);
+        assertThat(bundles.findAll().get(0).getFileIds()).hasSize(2);
     }
 
     @Test

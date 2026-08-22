@@ -90,6 +90,12 @@ public class S3StorageService implements StorageService {
     }
 
     @Override
+    public java.io.InputStream openObject(String key) {
+        // ResponseInputStream is an InputStream over the S3 object body; caller closes it.
+        return s3.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build());
+    }
+
+    @Override
     public void delete(String key) {
         try {
             s3.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());

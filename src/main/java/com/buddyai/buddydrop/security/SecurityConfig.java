@@ -29,7 +29,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/", "/login", "/auth/**", "/s/**",
+                                "/", "/login", "/auth/**", "/s/**", "/d/**",
                                 "/css/**", "/js/**", "/favicon.ico",
                                 "/actuator/health", "/error")
                         .permitAll()

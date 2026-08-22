@@ -1,5 +1,6 @@
 package com.buddyai.buddydrop.storage;
 
+import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +26,13 @@ public interface StorageService {
 
     /** Actual stored object size in bytes, or empty if the object is absent. Used to confirm uploads. */
     Optional<Long> objectSize(String key);
+
+    /**
+     * Open the object's bytes as a stream. Unlike downloads (which use presigned URLs), this is used
+     * to build a ZIP of several files server-side — the one case where bytes flow through the app.
+     * The caller must close the stream.
+     */
+    InputStream openObject(String key);
 
     /** Permanently remove the object. No-op if it does not exist. */
     void delete(String key);

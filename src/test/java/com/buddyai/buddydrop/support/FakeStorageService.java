@@ -50,6 +50,12 @@ public class FakeStorageService implements StorageService {
     }
 
     @Override
+    public java.io.InputStream openObject(String key) {
+        // Return deterministic dummy bytes so ZIP streaming can be exercised in tests.
+        return new java.io.ByteArrayInputStream(("bytes:" + key).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    @Override
     public void delete(String key) {
         objects.remove(key);
     }

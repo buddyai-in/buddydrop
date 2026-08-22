@@ -103,7 +103,9 @@ DELETE /api/files/{id}/share  → revoke
 Share tokens are stored as SHA-256 hashes and shown once at creation; passwords are BCrypt-hashed;
 expiry and download caps are enforced server-side on every public hit.
 
-The dashboard is paginated, supports multi-select **bulk delete / share**, and there's a **profile**
+Multi-select **bulk share** produces a single **bundle link** (`/d/{token}`) that downloads all the
+selected files as one ZIP, with the same expiry / download-cap / password options. The dashboard is
+paginated, supports multi-select **bulk delete**, and there's a **profile**
 page (`/profile`) showing plan, storage, and live rate-limit usage. Subscription tiers (Free / Pro /
 Business) are designed in [`docs/PLANS.md`](docs/PLANS.md) — not yet built, and scoped so the Free
 tier equals today's defaults (a no-op first phase).
