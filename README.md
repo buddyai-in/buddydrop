@@ -92,6 +92,7 @@ environment variables. Key ones:
 | `BUDDYDROP_S3_BUCKET` | Target S3 bucket | `buddydrop-dev` |
 | `AWS_REGION` | Bucket region | `us-east-1` |
 | `BUDDYDROP_S3_ENDPOINT` | S3-compatible endpoint override (MinIO/LocalStack) | *(none)* |
+| `BUDDYDROP_STORAGE_CONFIGURE_CORS` | Apply bucket CORS on startup (needs `s3:PutBucketCORS`) | `false` (dev: `true`) |
 | `BUDDYDROP_QUOTA_BYTES` | Per-account storage quota | 10 GB |
 | `BUDDYDROP_MAX_UPLOAD_BYTES` | Max single upload | 5 GB |
 | `BUDDYDROP_MAIL_PROVIDER` | Email transport: `log`, `ses`, or `smtp` | `log` (dev) / `ses` (prod) |
@@ -121,6 +122,25 @@ Email delivery is pluggable via `BUDDYDROP_MAIL_PROVIDER`, selecting one `EmailS
 - Block all public access — reach is only ever granted through a presigned URL.
 - Enforce server-side encryption (SSE-S3 or SSE-KMS).
 - Allow the app's IAM principal `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`, `s3:HeadObject`.
+- **CORS** — browser uploads `PUT` directly to S3, which triggers a CORS preflight, so the bucket
+  must allow the app's origin. Two ways:
+  - *Automatic (dev):* set `BUDDYDROP_STORAGE_CONFIGURE_CORS=true` (already on in the `dev` profile).
+    On startup the app applies the rule below for `base-url`; the credentials then also need
+    `s3:PutBucketCORS`. If that permission is missing it logs the exact policy instead of failing.
+  - *Manual (prod):* leave auto off and set the bucket CORS in the S3 console
+    (Permissions → CORS), replacing the origin with your deployed URL:
+
+    ```json
+    [
+      {
+        "AllowedOrigins": ["https://buddydrop.app"],
+        "AllowedMethods": ["PUT", "GET", "HEAD"],
+        "AllowedHeaders": ["*"],
+        "ExposeHeaders": ["ETag"],
+        "MaxAgeSeconds": 3000
+      }
+    ]
+    ```
 
 ---
 

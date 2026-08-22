@@ -7,7 +7,7 @@
 <head th:fragment="head(title)">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title th:text="${title}">BuddyDrop</title>
+  <title th:text="${title}">BuddyAi Drop-In</title>
   <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
   <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,7 +23,21 @@
   <span class="logo" aria-hidden="true">
     <svg viewBox="0 0 24 24"><path d="M12 2C8 8 5 11 5 15a7 7 0 0014 0c0-4-3-7-7-13z"/></svg>
   </span>
-  BuddyDrop
+  BuddyAi Drop-In
 </a>
+
+<!-- Shared site footer: <footer th:replace="~{fragments/layout :: footer}"></footer> -->
+<footer th:fragment="footer" class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="logo logo-sm" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8 8 5 11 5 15a7 7 0 0014 0c0-4-3-7-7-13z"/></svg>
+      </span>
+      <span>BuddyAi Drop-In</span>
+      <span class="footer-tag">Secure file transfer &amp; storage on S3</span>
+    </div>
+    <p class="footer-copy">© <span th:text="${T(java.time.Year).now()}">2026</span> BuddyAi Drop-In · Files encrypted at rest</p>
+  </div>
+</footer>
 </body>
 </html>
