@@ -12,9 +12,12 @@
 #   ./scripts/deploy-ec2.sh [tag]
 #
 # Config comes from the environment and from deploy/deploy.env if present
-# (copy deploy/deploy.env.example). Required:
+# (copy deploy/deploy.env.example). Any REQUIRED value that is missing is prompted for
+# interactively; in a non-interactive shell (e.g. CI) a missing required value fails instead.
 #   EC2_HOST         Public DNS/IP of the EC2 host
 #   DOCKER_USERNAME  Docker Hub namespace (or set DOCKER_IMAGE)   [for build + push]
+#   In the app env file: BUDDYDROP_DOMAIN, BUDDYDROP_BASE_URL, BUDDYDROP_DB_URL,
+#                        BUDDYDROP_DB_PASSWORD, BUDDYDROP_S3_BUCKET
 # Common optional (defaults in parentheses):
 #   EC2_USER (ubuntu)  EC2_SSH_KEY (ssh-agent)  EC2_PORT (22)  EC2_DEPLOY_DIR (/opt/buddydrop)
 #   APP_ENV_FILE (deploy/.env.prod)  TAG (arg -> pom version -> latest)  SKIP_PUSH (false)
@@ -31,14 +34,35 @@ COMPOSE_FILE="${DEPLOY_DIR_LOCAL}/docker-compose.prod.yml"
 CADDYFILE="${DEPLOY_DIR_LOCAL}/Caddyfile"
 COMPOSE_BASENAME="docker-compose.prod.yml"
 
+# Prompt for a required value when it is missing. An interactive terminal gets a prompt (looped
+# until non-empty); without a terminal (e.g. CI) the script fails with guidance instead.
+#   prompt_var VARNAME "description" [secret]
+prompt_var() {
+  local name="$1" desc="$2" secret="${3:-}" val="${!1:-}"
+  while [[ -z "${val}" ]]; do
+    if [[ ! -t 0 ]]; then
+      echo "ERROR: required ${name} (${desc}) is not set, and there is no terminal to prompt on." >&2
+      echo "       Set it in the environment, ${DEPLOY_DIR_LOCAL}/deploy.env, or the app env file, then re-run." >&2
+      exit 1
+    fi
+    if [[ -n "${secret}" ]]; then
+      read -r -s -p "  ${desc} [${name}]: " val; echo
+    else
+      read -r -p "  ${desc} [${name}]: " val
+    fi
+  done
+  printf -v "${name}" '%s' "${val}"
+  export "${name}"
+}
+
 # --- Load deploy config, without clobbering already-exported vars ---
 if [[ -f "${DEPLOY_DIR_LOCAL}/deploy.env" ]]; then
   set -a; # shellcheck disable=SC1091
   . "./${DEPLOY_DIR_LOCAL}/deploy.env"; set +a
 fi
 
-# --- Resolve config with defaults ---
-: "${EC2_HOST:?Set EC2_HOST (see deploy/deploy.env.example)}"
+# --- Resolve config with defaults (prompting for missing required values) ---
+[[ -n "${EC2_HOST:-}" ]] || prompt_var EC2_HOST "EC2 host — public DNS or IP"
 EC2_USER="${EC2_USER:-ubuntu}"
 EC2_PORT="${EC2_PORT:-22}"
 EC2_DEPLOY_DIR="${EC2_DEPLOY_DIR:-/opt/buddydrop}"
@@ -50,7 +74,7 @@ SKIP_PUSH="${SKIP_PUSH:-false}"
 pom_version="$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout 2>/dev/null || true)"
 TAG="${1:-${TAG:-${pom_version:-latest}}}"
 if [[ -z "${DOCKER_IMAGE:-}" ]]; then
-  : "${DOCKER_USERNAME:?Set DOCKER_USERNAME or DOCKER_IMAGE (see deploy/deploy.env.example)}"
+  [[ -n "${DOCKER_USERNAME:-}" ]] || prompt_var DOCKER_USERNAME "Docker Hub namespace (user or org)"
   DOCKER_IMAGE="${DOCKER_USERNAME}/buddydrop"
 fi
 
@@ -62,6 +86,37 @@ if [[ ! -f "${APP_ENV_FILE}" ]]; then
   echo "ERROR: app env file '${APP_ENV_FILE}' not found." >&2
   echo "       Copy ${DEPLOY_DIR_LOCAL}/.env.prod.example to it and fill it in." >&2
   exit 1
+fi
+
+# --- Validate the app env; prompt for any missing REQUIRED values ---
+# These mirror the ${VAR:?...} guards in deploy/docker-compose.prod.yml. Reading happens in a
+# subshell so sourcing the env file can't clobber the script's own resolved config.
+app_env_value() { ( set -a; # shellcheck disable=SC1090
+  . "${APP_ENV_FILE}" >/dev/null 2>&1 || true; printf '%s' "${!1:-}" ); }
+
+declare -a prompted_env=()
+ensure_app_var() {   # ensure_app_var VARNAME "description" [secret]
+  local name="$1"
+  if [[ -z "$(app_env_value "${name}")" ]]; then
+    prompt_var "$@"
+    prompted_env+=("${name}=${!name}")
+  fi
+}
+
+ensure_app_var BUDDYDROP_DOMAIN      "public domain, e.g. drop.example.com"
+ensure_app_var BUDDYDROP_BASE_URL    "public base URL, e.g. https://drop.example.com"
+ensure_app_var BUDDYDROP_DB_URL      "JDBC database URL, e.g. jdbc:postgresql://host:5432/buddydrop"
+ensure_app_var BUDDYDROP_DB_PASSWORD "database password" secret
+ensure_app_var BUDDYDROP_S3_BUCKET   "S3 bucket name"
+
+# Build the env file to ship: the operator's file plus any values entered at the prompt. In a
+# compose env file later lines win, so appended answers override blanks earlier in the file.
+SHIP_ENV="$(mktemp)"; chmod 600 "${SHIP_ENV}"
+trap 'rm -f "${SHIP_ENV}"' EXIT
+cp "${APP_ENV_FILE}" "${SHIP_ENV}"
+if ((${#prompted_env[@]})); then
+  printf '\n# --- added interactively by deploy-ec2.sh ---\n' >> "${SHIP_ENV}"
+  printf '%s\n' "${prompted_env[@]}" >> "${SHIP_ENV}"
 fi
 
 # --- SSH/scp option arrays (quote-safe) ---
@@ -88,8 +143,8 @@ fi
 echo "==> Copying deploy files to the host"
 ssh "${ssh_opts[@]}" "${remote}" "mkdir -p '${EC2_DEPLOY_DIR}'"
 scp "${scp_opts[@]}" "${COMPOSE_FILE}" "${CADDYFILE}" "${remote}:${EC2_DEPLOY_DIR}/"
-# Ship the app env as `.env` so `docker compose` picks it up automatically.
-scp "${scp_opts[@]}" "${APP_ENV_FILE}" "${remote}:${EC2_DEPLOY_DIR}/.env"
+# Ship the (merged) app env as `.env` so `docker compose` picks it up automatically.
+scp "${scp_opts[@]}" "${SHIP_ENV}" "${remote}:${EC2_DEPLOY_DIR}/.env"
 
 # --- 3. Pull + restart on the host, then health-check ---
 # DOCKER_IMAGE/TAG are exported into the remote shell so the tag we just pushed always wins over

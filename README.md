@@ -43,17 +43,19 @@ Tests run entirely in-memory (H2 + a fake storage backend); no AWS or network ac
 
 ## Run with Docker
 
-A multi-stage `Dockerfile` (Maven build → slim non-root JRE) and a `docker-compose.yml` (app +
-PostgreSQL) are included.
+A multi-stage `Dockerfile` (Maven build → slim non-root JRE) and a `docker-compose.yml` (builds and
+runs the app against an **external** database) are included.
 
 ```bash
-cp .env.example .env      # fill in AWS creds + bucket (email defaults to console logging)
+cp .env.example .env      # fill in BUDDYDROP_DB_URL, AWS creds + bucket (email defaults to console logging)
 docker compose up --build
 ```
 
-The stack runs the `prod` profile against PostgreSQL. `BUDDYDROP_COOKIE_SECURE=false` (set in the
-compose env) lets the session cookie work over plain HTTP on localhost — set it back to `true`
-behind HTTPS. App comes up on <http://localhost:8080> with a `/actuator/health` healthcheck.
+The stack runs the `prod` profile. The database is external — there is no bundled Postgres
+container; set `BUDDYDROP_DB_URL` (and user/password) in `.env` to point at your PostgreSQL (a local
+instance or RDS). `BUDDYDROP_COOKIE_SECURE=false` (set in the compose env) lets the session cookie
+work over plain HTTP on localhost — set it back to `true` behind HTTPS. App comes up on
+<http://localhost:8080> with a `/actuator/health` healthcheck.
 
 ### Publish to Docker Hub
 
