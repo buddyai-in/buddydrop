@@ -24,3 +24,6 @@ application-local.yml
 application-local.yaml
 *.env
 .env
+# Deploy secrets/config (keep the *.example templates tracked).
+.env.prod
+deploy/deploy.env
