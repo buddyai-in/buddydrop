@@ -1,44 +1,29 @@
-# Local/prod-shaped stack: BuddyDrop + PostgreSQL.
-# Copy .env.example to .env and fill in AWS credentials + bucket, then: docker compose up --build
+# Local build-and-run stack: builds the image from source and runs it against an EXTERNAL database.
+# Copy .env.example to .env and fill in the DB connection + AWS credentials, then: docker compose up --build
 #
 # Notes:
-# - Runs the `prod` Spring profile (PostgreSQL + real email transport).
+# - Runs the `prod` Spring profile. The database is external (no Postgres container here) —
+#   set BUDDYDROP_DB_URL to point at your PostgreSQL (a local instance, or RDS).
 # - BUDDYDROP_COOKIE_SECURE=false lets the session cookie work over plain HTTP on localhost;
 #   set it back to true behind HTTPS.
 # - Email defaults to `log` so the app runs without SES; set BUDDYDROP_MAIL_PROVIDER=ses to send.
+# - For a production deploy (Caddy TLS + image pulled from Docker Hub), see deploy/ and
+#   scripts/deploy-ec2.sh.
 
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: buddydrop
-      POSTGRES_USER: buddydrop
-      POSTGRES_PASSWORD: ${BUDDYDROP_DB_PASSWORD:-buddydrop}
-    volumes:
-      - buddydrop-db:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U buddydrop -d buddydrop"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
   app:
     build: .
     image: ${DOCKER_IMAGE:-buddydrop}:${TAG:-latest}
-    depends_on:
-      db:
-        condition: service_healthy
     ports:
       - "${APP_PORT:-8080}:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       BUDDYDROP_BASE_URL: ${BUDDYDROP_BASE_URL:-http://localhost:8080}
       BUDDYDROP_COOKIE_SECURE: ${BUDDYDROP_COOKIE_SECURE:-false}
-      # Database (points at the db service on the compose network)
-      BUDDYDROP_DB_URL: jdbc:postgresql://db:5432/buddydrop
-      BUDDYDROP_DB_USER: buddydrop
-      BUDDYDROP_DB_PASSWORD: ${BUDDYDROP_DB_PASSWORD:-buddydrop}
+      # Database (external — set these in .env)
+      BUDDYDROP_DB_URL: ${BUDDYDROP_DB_URL:?set BUDDYDROP_DB_URL (jdbc:postgresql://host:5432/db)}
+      BUDDYDROP_DB_USER: ${BUDDYDROP_DB_USER:-buddydrop}
+      BUDDYDROP_DB_PASSWORD: ${BUDDYDROP_DB_PASSWORD:-}
       # S3
       BUDDYDROP_S3_BUCKET: ${BUDDYDROP_S3_BUCKET:-buddydrop-dev}
       AWS_REGION: ${AWS_REGION:-us-east-1}
@@ -49,6 +34,3 @@ services:
       BUDDYDROP_MAIL_PROVIDER: ${BUDDYDROP_MAIL_PROVIDER:-log}
       BUDDYDROP_MAIL_FROM: ${BUDDYDROP_MAIL_FROM:-no-reply@buddydrop.app}
     restart: unless-stopped
-
-volumes:
-  buddydrop-db:
