@@ -11,7 +11,10 @@ COPY src ./src
 RUN mvn -q -B clean package -DskipTests
 
 # ---- runtime stage: slim JRE, non-root ----
-FROM eclipse-temurin:17-jre-alpine AS runtime
+# BellSoft Liberica JRE on Alpine: slim + musl, and multi-arch (linux/amd64 and linux/arm64),
+# so the image builds on x86 and on arm64 hosts/Graviton alike. (Temurin's Alpine images are
+# amd64-only, which breaks arm64 builds with "no match for platform in manifest".)
+FROM bellsoft/liberica-openjre-alpine:17 AS runtime
 WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=build /app/target/*.jar app.jar
