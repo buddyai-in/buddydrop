@@ -1,0 +1,70 @@
+# Production stack for a single EC2 host: Caddy (auto-HTTPS) in front of the BuddyDrop app.
+#
+# Differences from the root docker-compose.yml (which is for local, source-in-tree runs):
+#   - The app image is PULLED from Docker Hub — there is no `build:` section, because the
+#     EC2 host has no source tree. `scripts/deploy-ec2.sh` builds + pushes, then pulls here.
+#   - No PostgreSQL container: the database is external (e.g. RDS). Point BUDDYDROP_DB_URL at it.
+#   - Caddy terminates TLS, auto-provisioning Let's Encrypt certs for BUDDYDROP_DOMAIN.
+#
+# `scripts/deploy-ec2.sh` ships this file, the Caddyfile, and your env file (as `.env`) to the
+# host, then runs `docker compose -f docker-compose.prod.yml pull && up -d`.
+
+services:
+  app:
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE in the env file}:${TAG:-latest}
+    restart: unless-stopped
+    # Reachable by Caddy over the compose network as app:8080; not published to the host.
+    expose:
+      - "8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      BUDDYDROP_BASE_URL: ${BUDDYDROP_BASE_URL:?set BUDDYDROP_BASE_URL (https://your-domain)}
+      # Secure cookies require HTTPS — Caddy provides it, so keep this true in production.
+      BUDDYDROP_COOKIE_SECURE: ${BUDDYDROP_COOKIE_SECURE:-true}
+      # Database (external, e.g. RDS PostgreSQL)
+      BUDDYDROP_DB_URL: ${BUDDYDROP_DB_URL:?set BUDDYDROP_DB_URL (jdbc:postgresql://host:5432/db)}
+      BUDDYDROP_DB_USER: ${BUDDYDROP_DB_USER:-buddydrop}
+      BUDDYDROP_DB_PASSWORD: ${BUDDYDROP_DB_PASSWORD:?set BUDDYDROP_DB_PASSWORD}
+      # S3
+      BUDDYDROP_S3_BUCKET: ${BUDDYDROP_S3_BUCKET:?set BUDDYDROP_S3_BUCKET}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      # Leave AWS_* empty to use the EC2 instance role (recommended); set them for static keys.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      BUDDYDROP_STORAGE_CONFIGURE_CORS: ${BUDDYDROP_STORAGE_CONFIGURE_CORS:-false}
+      # Email (ses | smtp | log)
+      BUDDYDROP_MAIL_PROVIDER: ${BUDDYDROP_MAIL_PROVIDER:-ses}
+      BUDDYDROP_MAIL_FROM: ${BUDDYDROP_MAIL_FROM:-no-reply@buddydrop.app}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 45s
+      retries: 3
+    networks:
+      - buddydrop
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Referenced by the Caddyfile; must be a public DNS name pointing at this host.
+      BUDDYDROP_DOMAIN: ${BUDDYDROP_DOMAIN:?set BUDDYDROP_DOMAIN (the public hostname)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data      # issued certificates — persist so they survive restarts
+      - caddy_config:/config
+    networks:
+      - buddydrop
+
+networks:
+  buddydrop:
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,18 @@
+# Caddy reverse proxy for BuddyDrop.
+#
+# Caddy automatically obtains and renews a Let's Encrypt TLS certificate for BUDDYDROP_DOMAIN,
+# then proxies HTTPS traffic to the app container. For this to work:
+#   - BUDDYDROP_DOMAIN's DNS A/AAAA record must point at this EC2 host, and
+#   - the host's security group must allow inbound 80 (ACME challenge) and 443.
+#
+# To receive certificate-expiry notices, add a global options block at the top of this file:
+#   {
+#       email you@example.com
+#   }
+
+{$BUDDYDROP_DOMAIN} {
+	encode zstd gzip
+	# The app trusts forwarded headers (server.forward-headers-strategy=framework),
+	# so it builds correct https:// absolute URLs behind this proxy.
+	reverse_proxy app:8080
+}

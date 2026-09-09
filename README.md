@@ -66,6 +66,32 @@ Env knobs: `DOCKER_IMAGE` (default `$DOCKER_USERNAME/buddydrop`), `TAG` (default
 version), `DOCKER_PASSWORD` (a Docker Hub access token → auto `docker login`), `PUSH_LATEST`, and
 `PLATFORMS` (e.g. `linux/amd64,linux/arm64` for a multi-arch buildx push). It also reads `.env`.
 
+### Deploy to EC2
+
+`scripts/deploy-ec2.sh` builds the image, pushes it to Docker Hub (reusing `docker-publish.sh`),
+then over SSH pulls it on an EC2 host and brings up a production stack: **[Caddy](https://caddyserver.com/)**
+auto-provisions Let's Encrypt TLS and reverse-proxies to the app. The database is **external**
+(e.g. RDS) — point `BUDDYDROP_DB_URL` at it. The deploy files live in `deploy/`.
+
+**One-time setup on the host:** install Docker + the compose plugin, and open the security group
+for inbound `22`, `80`, and `443`. Point your domain's DNS at the host. (For a private image, run
+`docker login` on the host once — the script does not forward registry credentials.)
+
+**From your machine:**
+
+```bash
+cp deploy/deploy.env.example  deploy/deploy.env    # EC2 host + Docker Hub settings
+cp deploy/.env.prod.example   deploy/.env.prod     # app runtime env (domain, RDS, S3, mail)
+# fill both in, then:
+./scripts/deploy-ec2.sh                            # or: ./scripts/deploy-ec2.sh 1.2.3  (explicit tag)
+```
+
+The script ships `deploy/docker-compose.prod.yml`, the `Caddyfile`, and `deploy/.env.prod` (as
+`.env`) to `EC2_DEPLOY_DIR`, runs `docker compose pull && up -d`, and waits for `/actuator/health`
+to report `UP`. Both `deploy/deploy.env` and `deploy/.env.prod` are gitignored — commit only the
+`*.example` templates. Re-running redeploys; set `SKIP_PUSH=true` for a config-only redeploy of the
+current tag.
+
 ---
 
 ## How it works
