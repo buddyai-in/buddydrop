@@ -44,6 +44,23 @@ buddydrop:
     session-ttl: ${BUDDYDROP_SESSION_TIMEOUT:60m}
     max-requests-per-window: 5
     request-window: 15m
+    # Optional social sign-in. A provider appears on the login page only when its client id is set.
+    # Register <base-url>/login/oauth2/code/<google|apple|facebook|x> as the redirect URI with each one.
+    social:
+      google:
+        client-id: ${BUDDYDROP_GOOGLE_CLIENT_ID:}
+        client-secret: ${BUDDYDROP_GOOGLE_CLIENT_SECRET:}
+      facebook:
+        client-id: ${BUDDYDROP_FACEBOOK_CLIENT_ID:}
+        client-secret: ${BUDDYDROP_FACEBOOK_CLIENT_SECRET:}
+      x:
+        client-id: ${BUDDYDROP_X_CLIENT_ID:}
+        client-secret: ${BUDDYDROP_X_CLIENT_SECRET:}
+      apple:
+        client-id: ${BUDDYDROP_APPLE_CLIENT_ID:}       # Services ID
+        team-id: ${BUDDYDROP_APPLE_TEAM_ID:}
+        key-id: ${BUDDYDROP_APPLE_KEY_ID:}
+        private-key: ${BUDDYDROP_APPLE_PRIVATE_KEY:}   # AuthKey_<key-id>.p8 contents
   storage:
     bucket: ${BUDDYDROP_S3_BUCKET:buddydrop-dev}
     region: ${AWS_REGION:us-east-1}

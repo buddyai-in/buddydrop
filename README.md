@@ -1,6 +1,7 @@
 # BuddyDrop
 
-Secure file transfer &amp; storage on Amazon S3, with passwordless **magic-link** sign-in.
+Secure file transfer &amp; storage on Amazon S3, with passwordless **magic-link** sign-in — plus
+optional **Continue with Google / Apple / Facebook / X**.
 
 Sign in with a one-time email link, keep a personal library of files, and hand any file to
 someone else with an expiring, optionally password-protected share link. File bytes travel
@@ -156,10 +157,31 @@ environment variables. Key ones:
 | `BUDDYDROP_MAIL_FROM` | From address on emails | `no-reply@buddydrop.app` |
 | `BUDDYDROP_SES_REGION` | SES region (falls back to `AWS_REGION`) | `us-east-1` |
 | `BUDDYDROP_SES_CONFIG_SET` | Optional SES configuration set | *(none)* |
+| `BUDDYDROP_{GOOGLE,FACEBOOK,X}_CLIENT_ID` / `_CLIENT_SECRET` | Social sign-in credentials (see below) | *(off)* |
+| `BUDDYDROP_APPLE_CLIENT_ID` / `_TEAM_ID` / `_KEY_ID` / `_PRIVATE_KEY` | Sign in with Apple (see below) | *(off)* |
 
 **Production** (`prod` profile) additionally reads `BUDDYDROP_DB_URL` / `BUDDYDROP_DB_USER` /
 `BUDDYDROP_DB_PASSWORD`. AWS credentials come from the standard provider chain (env vars, profile,
 or IAM role) — never hardcoded.
+
+### Social sign-in
+
+The login page offers "Continue with …" for each provider whose client id is set; with none set the
+app is magic-link only. Register this exact redirect URI with each provider:
+`<BUDDYDROP_BASE_URL>/login/oauth2/code/<google|apple|facebook|x>`.
+
+Accounts are keyed by email, so a social sign-in lands on the **same account** as a magic link for
+the same address. Only a provider-**verified** email is accepted; a provider account without one
+(e.g. a phone-only Facebook account) is turned away with a prompt to use the email link instead.
+
+- **Google** — OAuth client (type *Web application*) in Google Cloud Console → Credentials.
+- **Facebook** — a Meta app with *Facebook Login*; the `email` permission must be granted.
+- **X** — an OAuth 2.0 *Web App* client in the X developer portal, with **Request email from users**
+  enabled (otherwise X returns no email and sign-in is refused). PKCE is handled automatically.
+- **Apple** — a *Services ID* (the client id) with Sign in with Apple enabled and your domain + return
+  URL registered, plus a *Sign in with Apple* key. Set the Team ID, Key ID and the `.p8` key
+  contents; the app signs Apple's short-lived client-secret JWT itself. Apple only redirects to
+  HTTPS on a real domain, so it can't be tested on `localhost`.
 
 ### Rate limits
 
@@ -213,7 +235,7 @@ Email delivery is pluggable via `BUDDYDROP_MAIL_PROVIDER`, selecting one `EmailS
 
 ```
 src/main/java/com/buddyai/buddydrop/
-├─ auth/        magic-link sign-in, rate limiting, session
+├─ auth/        magic-link + social (auth/social) sign-in, accounts, rate limiting
 ├─ config/      typed properties + S3 client beans
 ├─ domain/      JPA entities (AppUser, MagicToken, StoredFile, ShareLink)
 ├─ repository/  Spring Data repositories

@@ -9,6 +9,18 @@ spring:
 
 buddydrop:
   base-url: http://localhost:8080
+  auth:
+    # Dummy credentials so every social provider is registered; no test calls a real provider.
+    social:
+      google: { client-id: test-google, client-secret: test-secret }
+      facebook: { client-id: test-facebook, client-secret: test-secret }
+      x: { client-id: test-x, client-secret: test-secret }
+      apple:
+        client-id: app.buddydrop.test
+        team-id: TEAMID1234
+        key-id: KEYID12345
+        # Throwaway P-256 key generated for tests only.
+        private-key: MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQglsJz4q8NJ2pTRBN3CGt0+FpzQhH1NiFoQjS9qbV4x1OhRANCAATp6WkEfqJWpLJDDOar1YzPJ5JVfgQS9yKD3J/pSWm2XNLzahbUcA6Yp7p6w1GF1op2gxkq3WoZpR8AkZ+taExL
   storage:
     bucket: test-bucket
     region: us-east-1

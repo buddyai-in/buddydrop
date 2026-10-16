@@ -64,6 +64,9 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -.015em; text-wra
 .auth-card h1 { font-size: 24px; margin-bottom: 6px; }
 .auth-card .subtitle { color: var(--ink-3); font-size: 14px; margin: 0 0 var(--space-5); }
 .auth-card form { display: flex; flex-direction: column; gap: var(--space-4); }
+.social-login { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-4); }
+.auth-divider { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-2) 0 0; color: var(--ink-3); font-size: 13px; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
 
 .notice { border-radius: var(--radius); padding: var(--space-5); font-size: 14px; text-align: left; }
 .notice-info { background: var(--accent-wash); border: 1px solid var(--accent); color: var(--accent-2); }
