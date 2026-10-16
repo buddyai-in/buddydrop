@@ -7,8 +7,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * A person who has requested a magic link at least once. Created lazily on first
- * {@code /auth/request}; identity is the (unique, lower-cased) email address.
+ * A person who has requested a magic link or signed in with a social provider at least once. Created
+ * lazily by {@code AccountService}; identity is the (unique, lower-cased) email address.
  */
 @Entity
 @Table(name = "app_user")

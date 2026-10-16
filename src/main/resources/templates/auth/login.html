@@ -12,6 +12,13 @@
 
     <p th:if="${error}" class="field-error" th:text="${error}">Error</p>
 
+    <div th:unless="${#lists.isEmpty(providers)}" class="social-login">
+      <a th:each="p : ${providers}" class="btn btn-ghost btn-block"
+         th:href="@{/oauth2/authorization/{id}(id=${p.id})}"
+         th:text="|Continue with ${p.label}|">Continue with Google</a>
+      <p class="auth-divider"><span>or use your email</span></p>
+    </div>
+
     <form th:action="@{/auth/request}" method="post">
       <div class="field">
         <label class="label" for="email">Email address</label>

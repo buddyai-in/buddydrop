@@ -1,20 +1,15 @@
 package com.buddyai.buddydrop.auth;
 
+import com.buddyai.buddydrop.auth.social.SocialClientRegistrations;
 import com.buddyai.buddydrop.domain.AppUser;
 import com.buddyai.buddydrop.security.AppUserPrincipal;
+import com.buddyai.buddydrop.security.SessionAuthenticator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * The passwordless sign-in surface: request a link, land on the confirm page, and establish a
- * session on an explicit POST.
+ * session on an explicit POST. The login page also offers any configured social providers, whose
+ * flow is handled by Spring's OAuth2 filters (see {@code SocialLoginConfigurer}).
  *
  * <p>The GET/POST split on {@code /auth/verify} is the load-bearing security detail — the GET only
  * previews the token (via {@link MagicLinkService#peekEmail}), so an email client or scanner that
@@ -34,18 +30,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AuthController {
 
     private final MagicLinkService magicLinkService;
-
-    private final SecurityContextHolderStrategy securityContextHolderStrategy =
-            SecurityContextHolder.getContextHolderStrategy();
-    private final SecurityContextRepository securityContextRepository =
-            new HttpSessionSecurityContextRepository();
+    private final SessionAuthenticator sessionAuthenticator;
+    private final SocialClientRegistrations socialProviders;
 
     @GetMapping("/login")
-    public String loginPage(Authentication authentication) {
+    public String loginPage(@RequestParam(value = "error", required = false) String error,
+                            Authentication authentication, Model model) {
         if (isAuthenticated(authentication)) {
             return "redirect:/files";
         }
-        return "auth/login";
+        if (error != null) {
+            model.addAttribute("error", socialErrorMessage(error));
+        }
+        return loginView(model);
     }
 
     @PostMapping("/auth/request")
@@ -55,7 +52,7 @@ public class AuthController {
         } catch (TooManyRequestsException e) {
             model.addAttribute("error", e.getMessage());
             model.addAttribute("email", email);
-            return "auth/login";
+            return loginView(model);
         }
         model.addAttribute("email", email.trim().toLowerCase());
         return "auth/sent";
@@ -84,19 +81,19 @@ public class AuthController {
         } catch (InvalidTokenException e) {
             return "auth/expired";
         }
-        establishSession(user, request, response);
+        sessionAuthenticator.signIn(user, request, response);
         return "redirect:/files";
     }
 
-    private void establishSession(AppUser user, HttpServletRequest request, HttpServletResponse response) {
-        AppUserPrincipal principal = new AppUserPrincipal(user.getId(), user.getEmail());
-        Authentication auth = UsernamePasswordAuthenticationToken.authenticated(
-                principal, null, AuthorityUtils.createAuthorityList("ROLE_USER"));
+    private String loginView(Model model) {
+        model.addAttribute("providers", socialProviders.providers());
+        return "auth/login";
+    }
 
-        SecurityContext context = securityContextHolderStrategy.createEmptyContext();
-        context.setAuthentication(auth);
-        securityContextHolderStrategy.setContext(context);
-        securityContextRepository.saveContext(context, request, response);
+    private static String socialErrorMessage(String code) {
+        return "social-email".equals(code)
+                ? "That account didn't share a verified email address. Use your email below instead."
+                : "Sign-in didn't complete. Please try again, or use your email below.";
     }
 
     private boolean isAuthenticated(Authentication authentication) {

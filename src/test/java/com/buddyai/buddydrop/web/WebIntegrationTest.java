@@ -117,6 +117,58 @@ class WebIntegrationTest {
     }
 
     @Test
+    void loginPageOffersConfiguredSocialProviders() throws Exception {
+        mvc.perform(get("/login"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("/oauth2/authorization/google"),
+                        org.hamcrest.Matchers.containsString("/oauth2/authorization/apple"),
+                        org.hamcrest.Matchers.containsString("/oauth2/authorization/facebook"),
+                        org.hamcrest.Matchers.containsString("/oauth2/authorization/x"),
+                        org.hamcrest.Matchers.containsString("Continue with Apple"))));
+    }
+
+    @Test
+    void googleRedirectsToProviderWithStateCookie() throws Exception {
+        mvc.perform(get("/oauth2/authorization/google"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("https://accounts.google.com/")))
+                .andExpect(header().string("Location", org.hamcrest.Matchers.containsString(
+                        "redirect_uri=http://localhost:8080/login/oauth2/code/google")))
+                .andExpect(cookie().exists("BD_OAUTH2_REQ"));
+    }
+
+    @Test
+    void xRedirectUsesPkceAndEmailScope() throws Exception {
+        mvc.perform(get("/oauth2/authorization/x"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("https://x.com/i/oauth2/authorize?")))
+                .andExpect(header().string("Location", org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("code_challenge="),
+                        org.hamcrest.Matchers.containsString("code_challenge_method=S256"),
+                        org.hamcrest.Matchers.containsString("users.email"))));
+    }
+
+    @Test
+    void appleRedirectAsksForFormPost() throws Exception {
+        mvc.perform(get("/oauth2/authorization/apple"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("https://appleid.apple.com/auth/authorize?")))
+                .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("response_mode=form_post")));
+    }
+
+    @Test
+    void crossSiteCallbackPostIsNotBlockedByCsrfButFailsWithoutPendingRequest() throws Exception {
+        // No CSRF token (Apple's form_post can't carry one) — must reach the OAuth2 filter, not 403.
+        mvc.perform(post("/login/oauth2/code/apple").param("code", "c").param("state", "forged"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login?error=social"));
+
+        mvc.perform(get("/login").param("error", "social"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Sign-in didn&#39;t complete")));
+    }
+
+    @Test
     void unknownShareTokenRendersUnavailable() throws Exception {
         mvc.perform(get("/s/{token}", "does-not-exist"))
                 .andExpect(status().isOk())

@@ -22,7 +22,16 @@ Both sit on the same S3 objects; the difference is who may reach them and for ho
 - **Magic link.** `AuthController` + `MagicLinkService`. Tokens are stored only as SHA-256 hashes,
   TTL 15m, single-use. The `GET /auth/verify` *previews* the token; only `POST /auth/verify`
   consumes it — so an email scanner's pre-fetch can't burn a link. Session is HttpOnly, set
-  programmatically (there is no password login).
+  programmatically by `security/SessionAuthenticator` (there is no password login).
+- **Social sign-in (optional).** `auth/social/*` on Spring OAuth2 login; Google, Apple, Facebook, X,
+  each enabled only when its credentials are set (`SocialClientRegistrations`). Identity is still
+  the email: `SocialLoginSuccessHandler` takes only a **provider-verified** email (`SocialEmails`),
+  find-or-creates via `AccountService` (shared with magic link), and swaps in the same
+  `AppUserPrincipal` session. Provider quirks are confined to `SocialLoginConfigurer` (Apple
+  `form_post` + signed client secret, X PKCE + `data` envelope). Apple's callback is a cross-site
+  POST that drops the Lax session cookie, so the pending request lives server-side behind a
+  `SameSite=None` handle cookie (`BrowserBoundAuthorizationRequestRepository`), and only
+  `/login/oauth2/code/*` is CSRF-exempt.
 - **Direct-to-S3 transfer.** Bytes never flow through the JVM. `FileService.initiateUpload` does a
   quota check then issues a presigned `PUT`; the browser uploads to S3; `confirmUpload` reads the
   **real** size from S3 (client size is not trusted) and flips the row `PENDING → READY`.
@@ -78,6 +87,8 @@ StorageService (abstraction) ──► S3StorageService   ← all S3 access live
 | Looking for… | It's in… |
 | --- | --- |
 | Sign-in / token logic | `auth/MagicLinkService`, `auth/AuthController` |
+| Account find-or-create (all sign-in methods) | `auth/AccountService` |
+| Social sign-in (Google/Apple/Facebook/X) | `auth/social/*` |
 | Rate limiting | `auth/RateLimitService` |
 | Quota, upload presign/confirm, delete | `file/FileService` |
 | Per-user upload/download rate limits | `usage/UsageLimitService` (windows: hour/day/month) |

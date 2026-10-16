@@ -43,6 +43,49 @@ public class AppProperties {
         private int maxRequestsPerWindow = 5;
         /** Sliding window for the per-email request throttle. */
         private Duration requestWindow = Duration.ofMinutes(15);
+        /** Optional "Continue with …" providers; each is enabled only when its credentials are set. */
+        @NestedConfigurationProperty
+        private Social social = new Social();
+    }
+
+    /**
+     * Social sign-in credentials. Provider endpoints are fixed in code; only the app's own
+     * credentials are configured. The redirect URI to register with each provider is
+     * {@code <base-url>/login/oauth2/code/<google|facebook|x|apple>}.
+     */
+    @Data
+    public static class Social {
+        @NestedConfigurationProperty
+        private OAuthClient google = new OAuthClient();
+        @NestedConfigurationProperty
+        private OAuthClient facebook = new OAuthClient();
+        /** X (Twitter) OAuth 2.0 client; the app must have "Request email from users" enabled. */
+        @NestedConfigurationProperty
+        private OAuthClient x = new OAuthClient();
+        @NestedConfigurationProperty
+        private Apple apple = new Apple();
+    }
+
+    @Data
+    public static class OAuthClient {
+        private String clientId;
+        private String clientSecret;
+    }
+
+    /**
+     * Sign in with Apple. Apple has no static client secret: the app signs a short-lived ES256 JWT
+     * with a private key created under Certificates, Identifiers &amp; Profiles → Keys.
+     */
+    @Data
+    public static class Apple {
+        /** The Services ID (not the App ID), e.g. {@code app.buddydrop.signin}. */
+        private String clientId;
+        /** The 10-character Apple Developer Team ID. */
+        private String teamId;
+        /** The 10-character ID of the Sign in with Apple key. */
+        private String keyId;
+        /** Contents of the downloaded {@code AuthKey_<keyId>.p8}: PEM, or just its base64 body. */
+        private String privateKey;
     }
 
     @Data
