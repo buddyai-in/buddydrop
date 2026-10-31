@@ -23,3 +23,13 @@ prompt_var() {
   printf -v "${name}" '%s' "${val}"
   export "${name}"
 }
+
+# Ask a yes/no question on the terminal; succeeds only on y/yes. Without a terminal (e.g. CI) it
+# answers "no" without asking, so optional steps are skipped rather than blocking.
+#   confirm "question"
+confirm() {
+  [[ -t 0 ]] || return 1
+  local answer
+  read -r -p "  $1 [y/N]: " answer
+  [[ "${answer}" =~ ^[Yy]([Ee][Ss])?$ ]]
+}

@@ -18,6 +18,9 @@
 #   DOCKER_USERNAME  Docker Hub namespace (or set DOCKER_IMAGE)   [for build + push]
 #   In the app env file: BUDDYDROP_DOMAIN, BUDDYDROP_BASE_URL, BUDDYDROP_DB_URL,
 #                        BUDDYDROP_DB_PASSWORD, BUDDYDROP_S3_BUCKET
+# Social sign-in (Google, Facebook, X, Apple) is optional: on a terminal, each provider not yet
+# configured is offered with a y/N prompt. A provider whose client id is set must have the rest of
+# its values too, so those are then treated as required.
 # Common optional (defaults in parentheses):
 #   EC2_USER (ubuntu)  EC2_SSH_KEY (ssh-agent)  EC2_PORT (22)  EC2_DEPLOY_DIR (/opt/buddydrop)
 #   APP_ENV_FILE (deploy/.env.prod)  TAG (arg -> pom version -> latest)  SKIP_PUSH (false)
@@ -91,6 +94,35 @@ ensure_app_var BUDDYDROP_BASE_URL    "public base URL, e.g. https://drop.example
 ensure_app_var BUDDYDROP_DB_URL      "JDBC database URL, e.g. jdbc:postgresql://host:5432/buddydrop"
 ensure_app_var BUDDYDROP_DB_PASSWORD "database password" secret
 ensure_app_var BUDDYDROP_S3_BUCKET   "S3 bucket name"
+
+# --- Social sign-in providers (optional) ---
+# Mirrors SocialClientRegistrations: a provider's client id is its on-switch, and once it is set the
+# rest of that provider's values are required (the app refuses to start otherwise). So an enabled
+# provider is validated like any required value; a disabled one is offered on a terminal only.
+#   social_provider "Label" CLIENT_ID_VAR "description" [VAR "description" secret|""]...
+social_provider() {
+  local label="$1" id_var="$2" id_desc="$3"; shift 3
+  if [[ -z "$(app_env_value "${id_var}")" ]]; then
+    confirm "Enable ${label} sign-in?" || return 0
+    echo "    Redirect URI to register with ${label}: <BUDDYDROP_BASE_URL>/login/oauth2/code/${label,,}"
+    ensure_app_var "${id_var}" "${id_desc}"
+  fi
+  while (($#)); do
+    ensure_app_var "$1" "$2" "$3"
+    shift 3
+  done
+}
+
+social_provider Google   BUDDYDROP_GOOGLE_CLIENT_ID   "Google OAuth client ID" \
+                         BUDDYDROP_GOOGLE_CLIENT_SECRET   "Google OAuth client secret" secret
+social_provider Facebook BUDDYDROP_FACEBOOK_CLIENT_ID "Facebook app ID" \
+                         BUDDYDROP_FACEBOOK_CLIENT_SECRET "Facebook app secret" secret
+social_provider X        BUDDYDROP_X_CLIENT_ID        "X OAuth 2.0 client ID" \
+                         BUDDYDROP_X_CLIENT_SECRET        "X OAuth 2.0 client secret" secret
+social_provider Apple    BUDDYDROP_APPLE_CLIENT_ID    "Apple Services ID" \
+                         BUDDYDROP_APPLE_TEAM_ID      "Apple Team ID" "" \
+                         BUDDYDROP_APPLE_KEY_ID       "Apple Key ID" "" \
+                         BUDDYDROP_APPLE_PRIVATE_KEY  "Apple AuthKey .p8 contents, on one line" secret
 
 # Build the env file to ship: the operator's file plus any values entered at the prompt. In a
 # compose env file later lines win, so appended answers override blanks earlier in the file.

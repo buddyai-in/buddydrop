@@ -98,6 +98,14 @@ to report `UP`. Both `deploy/deploy.env` and `deploy/.env.prod` are gitignored â
 `*.example` templates. Re-running redeploys; set `SKIP_PUSH=true` for a config-only redeploy of the
 current tag.
 
+Run from a terminal, the script prompts for any required value missing from those files. It also
+offers each social sign-in provider (Google, Facebook, X, Apple) that isn't configured yet with a
+`y/N` question, and asks for that provider's credentials if you say yes. A provider whose client id
+is set must have its remaining values (the app refuses to start otherwise), so those are required.
+Answers are added to the env shipped to the host, not written back to `deploy/.env.prod`. In a
+non-interactive run (CI) nothing is asked: a missing required value fails, unconfigured providers
+stay off.
+
 ---
 
 ## How it works
