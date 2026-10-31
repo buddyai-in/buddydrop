@@ -65,6 +65,9 @@ work over plain HTTP on localhost — set it back to `true` behind HTTPS. App co
 DOCKER_USERNAME=you ./scripts/docker-publish.sh
 ```
 
+If `DOCKER_USERNAME` (and `DOCKER_IMAGE`) is unset, the script prompts for it in an interactive
+terminal; in a non-interactive shell (CI) it fails with a hint instead.
+
 Env knobs: `DOCKER_IMAGE` (default `$DOCKER_USERNAME/buddydrop`), `TAG` (defaults to the pom
 version), `DOCKER_PASSWORD` (a Docker Hub access token → auto `docker login`), `PUSH_LATEST`, and
 `PLATFORMS` (e.g. `linux/amd64,linux/arm64` for a multi-arch buildx push). It also reads `.env`.

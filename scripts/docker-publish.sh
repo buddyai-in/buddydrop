@@ -3,7 +3,10 @@
 # Build the BuddyDrop Docker image and push it to Docker Hub.
 #
 # Usage:
-#   DOCKER_USERNAME=you ./scripts/docker-publish.sh [tag]
+#   ./scripts/docker-publish.sh [tag]
+#
+# Any REQUIRED value that is missing is prompted for interactively; in a non-interactive shell
+# (e.g. CI) a missing required value fails instead.
 #
 # Environment:
 #   DOCKER_USERNAME  Docker Hub user/namespace (required unless DOCKER_IMAGE is set)
@@ -18,6 +21,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# shellcheck source=lib/prompt.sh
+. "scripts/lib/prompt.sh"
+PROMPT_CONFIG_HINT="the environment or .env"
+
 # Load .env if present (without clobbering already-exported vars).
 if [[ -f .env ]]; then
   set -a; # shellcheck disable=SC1091
@@ -29,7 +36,7 @@ pom_version="$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout 2
 TAG="${1:-${TAG:-${pom_version:-latest}}}"
 
 if [[ -z "${DOCKER_IMAGE:-}" ]]; then
-  : "${DOCKER_USERNAME:?Set DOCKER_USERNAME (or DOCKER_IMAGE) to your Docker Hub namespace}"
+  [[ -n "${DOCKER_USERNAME:-}" ]] || prompt_var DOCKER_USERNAME "Docker Hub namespace (user or org)"
   DOCKER_IMAGE="${DOCKER_USERNAME}/buddydrop"
 fi
 
