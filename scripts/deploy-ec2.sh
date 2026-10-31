@@ -34,26 +34,9 @@ COMPOSE_FILE="${DEPLOY_DIR_LOCAL}/docker-compose.prod.yml"
 CADDYFILE="${DEPLOY_DIR_LOCAL}/Caddyfile"
 COMPOSE_BASENAME="docker-compose.prod.yml"
 
-# Prompt for a required value when it is missing. An interactive terminal gets a prompt (looped
-# until non-empty); without a terminal (e.g. CI) the script fails with guidance instead.
-#   prompt_var VARNAME "description" [secret]
-prompt_var() {
-  local name="$1" desc="$2" secret="${3:-}" val="${!1:-}"
-  while [[ -z "${val}" ]]; do
-    if [[ ! -t 0 ]]; then
-      echo "ERROR: required ${name} (${desc}) is not set, and there is no terminal to prompt on." >&2
-      echo "       Set it in the environment, ${DEPLOY_DIR_LOCAL}/deploy.env, or the app env file, then re-run." >&2
-      exit 1
-    fi
-    if [[ -n "${secret}" ]]; then
-      read -r -s -p "  ${desc} [${name}]: " val; echo
-    else
-      read -r -p "  ${desc} [${name}]: " val
-    fi
-  done
-  printf -v "${name}" '%s' "${val}"
-  export "${name}"
-}
+# shellcheck source=lib/prompt.sh
+. "scripts/lib/prompt.sh"
+PROMPT_CONFIG_HINT="the environment, ${DEPLOY_DIR_LOCAL}/deploy.env, or the app env file"
 
 # --- Load deploy config, without clobbering already-exported vars ---
 if [[ -f "${DEPLOY_DIR_LOCAL}/deploy.env" ]]; then
